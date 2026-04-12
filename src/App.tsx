@@ -13,8 +13,21 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const AppRoutes = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center gradient-primary">
+        <div className="text-center text-primary-foreground">
+          <div className="text-5xl mb-4 animate-bounce">👨‍👩‍👧‍👦</div>
+          <p className="text-lg font-semibold">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) return <Login />;
+
   return (
     <Routes>
       <Route path="/" element={user.role === 'parent' ? <ParentDashboard /> : <ChildDashboard />} />
