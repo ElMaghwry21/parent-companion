@@ -14,7 +14,131 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          role: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      redemptions: {
+        Row: {
+          child_id: string
+          id: string
+          points_spent: number
+          redeemed_at: string
+          reward_id: string
+        }
+        Insert: {
+          child_id: string
+          id?: string
+          points_spent: number
+          redeemed_at?: string
+          reward_id: string
+        }
+        Update: {
+          child_id?: string
+          id?: string
+          points_spent?: number
+          redeemed_at?: string
+          reward_id?: string
+        }
+        Relationships: []
+      }
+      task_submissions: {
+        Row: {
+          child_id: string
+          earned_points: number
+          hours_spent: number | null
+          id: string
+          proof_image_url: string | null
+          status: string
+          submitted_at: string
+          task_id: string
+        }
+        Insert: {
+          child_id: string
+          earned_points: number
+          hours_spent?: number | null
+          id?: string
+          proof_image_url?: string | null
+          status?: string
+          submitted_at?: string
+          task_id: string
+        }
+        Update: {
+          child_id?: string
+          earned_points?: number
+          hours_spent?: number | null
+          id?: string
+          proof_image_url?: string | null
+          status?: string
+          submitted_at?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_submissions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          points: number
+          requires_proof: boolean
+          title: string
+          total_hours: number | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          points: number
+          requires_proof?: boolean
+          title: string
+          total_hours?: number | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          points?: number
+          requires_proof?: boolean
+          title?: string
+          total_hours?: number | null
+          type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
