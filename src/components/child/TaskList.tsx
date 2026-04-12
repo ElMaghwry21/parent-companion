@@ -19,7 +19,7 @@ const TaskList = ({ tasks, submissions, childId, onSubmit }: Props) => {
   const [proofPreviews, setProofPreviews] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState<string | null>(null);
 
-  const getSubmission = (taskId: string) => submissions.find(s => s.taskId === taskId && s.child_id === childId) || submissions.find(s => s.task_id === taskId && s.child_id === childId);
+  const getSubmission = (taskId: string) => submissions.find(s => s.task_id === taskId && s.child_id === childId);
 
   const handleProofUpload = (taskId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
