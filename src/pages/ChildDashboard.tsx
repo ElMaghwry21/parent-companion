@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -6,22 +6,30 @@ import { Progress } from '@/components/ui/progress';
 import TaskList from '@/components/child/TaskList';
 import RewardsStore from '@/components/child/RewardsStore';
 import ThemeToggle from '@/components/ThemeToggle';
-import { getTasks, getSubmissions, getChildPoints } from '@/lib/store';
+import { getTasks, getSubmissions, getChildPoints, TaskRow, SubmissionRow } from '@/lib/store';
 import { getLevelInfo } from '@/lib/levels';
 
 const ChildDashboard = () => {
   const { user, logout } = useAuth();
-  const [refreshKey, setRefreshKey] = useState(0);
-  const refresh = useCallback(() => setRefreshKey(k => k + 1), []);
+  const [tasks, setTasks] = useState<TaskRow[]>([]);
+  const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
+  const [points, setPoints] = useState(0);
 
-  const childId = user?.id || 'child-1';
-  const tasks = getTasks();
-  const submissions = getSubmissions();
-  const points = getChildPoints(childId);
+  const childId = user?.id || '';
+
+  const refresh = useCallback(async () => {
+    const [t, s, p] = await Promise.all([getTasks(), getSubmissions(), getChildPoints(childId)]);
+    setTasks(t);
+    setSubmissions(s);
+    setPoints(p);
+  }, [childId]);
+
+  useEffect(() => { if (childId) refresh(); }, [childId, refresh]);
+
   const { current, next, progress } = getLevelInfo(points);
 
   return (
-    <div className="min-h-screen bg-background theme-transition" key={refreshKey}>
+    <div className="min-h-screen bg-background theme-transition">
       <header className="gradient-primary text-primary-foreground px-4 py-3 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-2">
           <span className="text-xl">{current.emoji}</span>
@@ -37,7 +45,6 @@ const ChildDashboard = () => {
       </header>
 
       <main className="max-w-xl mx-auto p-4 space-y-4">
-        {/* Points & Level Card */}
         <div className="rounded-2xl overflow-hidden shadow-xl">
           <div className="gradient-accent text-primary-foreground p-5 text-center">
             <p className="text-sm opacity-90 font-medium">My Points</p>
@@ -49,18 +56,10 @@ const ChildDashboard = () => {
                 <span className="text-2xl">{current.emoji}</span>
                 <div>
                   <p className="font-bold text-sm">Level {current.level} — {current.name}</p>
-                  {next && (
-                    <p className="text-xs text-muted-foreground">
-                      {next.minPoints - points} pts to {next.emoji} {next.name}
-                    </p>
-                  )}
+                  {next && <p className="text-xs text-muted-foreground">{next.minPoints - points} pts to {next.emoji} {next.name}</p>}
                 </div>
               </div>
-              {next && (
-                <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-full">
-                  {progress}%
-                </span>
-              )}
+              {next && <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-full">{progress}%</span>}
             </div>
             {next ? (
               <div className="space-y-1">
@@ -71,21 +70,15 @@ const ChildDashboard = () => {
                 </div>
               </div>
             ) : (
-              <div className="text-center text-sm font-semibold text-primary">
-                🎉 MAX LEVEL REACHED!
-              </div>
+              <div className="text-center text-sm font-semibold text-primary">🎉 MAX LEVEL REACHED!</div>
             )}
           </div>
         </div>
 
         <Tabs defaultValue="tasks">
           <TabsList className="w-full h-12 p-1 bg-muted theme-transition">
-            <TabsTrigger value="tasks" className="flex-1 h-full font-semibold data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground">
-              📝 Tasks
-            </TabsTrigger>
-            <TabsTrigger value="store" className="flex-1 h-full font-semibold data-[state=active]:gradient-accent data-[state=active]:text-primary-foreground">
-              🏪 Store
-            </TabsTrigger>
+            <TabsTrigger value="tasks" className="flex-1 h-full font-semibold data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground">📝 Tasks</TabsTrigger>
+            <TabsTrigger value="store" className="flex-1 h-full font-semibold data-[state=active]:gradient-accent data-[state=active]:text-primary-foreground">🏪 Store</TabsTrigger>
           </TabsList>
 
           <TabsContent value="tasks" className="mt-4">

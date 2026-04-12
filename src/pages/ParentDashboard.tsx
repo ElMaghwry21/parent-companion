@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,20 +7,37 @@ import { Badge } from '@/components/ui/badge';
 import AddTaskForm from '@/components/parent/AddTaskForm';
 import TaskReview from '@/components/parent/TaskReview';
 import ThemeToggle from '@/components/ThemeToggle';
-import { getTasks, getSubmissions, deleteTask, getChildPoints } from '@/lib/store';
+import { getTasks, getSubmissions, deleteTask, getChildPoints, TaskRow, SubmissionRow } from '@/lib/store';
 import { getLevelInfo } from '@/lib/levels';
 import { toast } from 'sonner';
 
 const ParentDashboard = () => {
   const { user, logout } = useAuth();
-  const [refreshKey, setRefreshKey] = useState(0);
-  const refresh = useCallback(() => setRefreshKey(k => k + 1), []);
+  const [tasks, setTasks] = useState<TaskRow[]>([]);
+  const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
+  const [childPoints, setChildPoints] = useState(0);
 
-  const tasks = getTasks();
-  const submissions = getSubmissions();
+  const refresh = useCallback(async () => {
+    const [t, s] = await Promise.all([getTasks(), getSubmissions()]);
+    setTasks(t);
+    setSubmissions(s);
+    // Try to get child points for display (find first child submission)
+    if (s.length > 0) {
+      const pts = await getChildPoints(s[0].child_id);
+      setChildPoints(pts);
+    }
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
   const pendingCount = submissions.filter(s => s.status === 'pending').length;
-  const childPoints = getChildPoints('child-1');
   const { current } = getLevelInfo(childPoints);
+
+  const handleDelete = async (id: string) => {
+    await deleteTask(id);
+    refresh();
+    toast.success('Task deleted');
+  };
 
   return (
     <div className="min-h-screen bg-background theme-transition">
@@ -38,7 +55,7 @@ const ParentDashboard = () => {
         </div>
       </header>
 
-      <main className="max-w-xl mx-auto p-4 space-y-4" key={refreshKey}>
+      <main className="max-w-xl mx-auto p-4 space-y-4">
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-xl gradient-primary text-primary-foreground p-3 text-center shadow-md">
             <p className="text-2xl font-bold">{tasks.length}</p>
@@ -56,9 +73,7 @@ const ParentDashboard = () => {
 
         <Tabs defaultValue="tasks">
           <TabsList className="w-full h-12 p-1 bg-muted theme-transition">
-            <TabsTrigger value="tasks" className="flex-1 h-full font-semibold data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground">
-              ➕ Tasks
-            </TabsTrigger>
+            <TabsTrigger value="tasks" className="flex-1 h-full font-semibold data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground">➕ Tasks</TabsTrigger>
             <TabsTrigger value="review" className="flex-1 h-full font-semibold gap-1 data-[state=active]:gradient-accent data-[state=active]:text-primary-foreground">
               📋 Review
               {pendingCount > 0 && <Badge className="ml-1 h-5 px-1.5 text-xs gradient-warning border-0">{pendingCount}</Badge>}
@@ -76,17 +91,10 @@ const ParentDashboard = () => {
                     <div>
                       <p className="text-sm font-medium">{task.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        <span className="font-semibold text-primary">{task.points} pts</span> • {task.type}{task.requiresProof ? ' • 📸' : ''}
+                        <span className="font-semibold text-primary">{task.points} pts</span> • {task.type}{task.requires_proof ? ' • 📸' : ''}
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => { deleteTask(task.id); refresh(); toast.success('Task deleted'); }}
-                      className="hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      🗑️
-                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(task.id)} className="hover:bg-destructive/10 hover:text-destructive">🗑️</Button>
                   </div>
                 ))}
               </CardContent>
