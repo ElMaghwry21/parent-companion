@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import TaskList from '@/components/child/TaskList';
 import RewardsStore from '@/components/child/RewardsStore';
+import ThemeToggle from '@/components/ThemeToggle';
 import { getTasks, getSubmissions, getChildPoints } from '@/lib/store';
 import { getLevelInfo } from '@/lib/levels';
 
@@ -20,14 +21,15 @@ const ChildDashboard = () => {
   const { current, next, progress } = getLevelInfo(points);
 
   return (
-    <div className="min-h-screen bg-muted/30" key={refreshKey}>
+    <div className="min-h-screen bg-background theme-transition" key={refreshKey}>
       <header className="gradient-primary text-primary-foreground px-4 py-3 flex items-center justify-between shadow-lg">
         <div className="flex items-center gap-2">
           <span className="text-xl">{current.emoji}</span>
           <h1 className="font-bold text-lg">My Dashboard</h1>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm opacity-90">Hi, {user?.name}</span>
+          <span className="text-sm opacity-90 hidden sm:inline">Hi, {user?.name}</span>
+          <ThemeToggle />
           <Button variant="outline" size="sm" onClick={logout} className="bg-primary-foreground/20 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/30">
             Logout
           </Button>
@@ -41,7 +43,7 @@ const ChildDashboard = () => {
             <p className="text-sm opacity-90 font-medium">My Points</p>
             <p className="text-5xl font-extrabold mt-1">⭐ {points}</p>
           </div>
-          <div className="bg-card p-4 space-y-3">
+          <div className="bg-card p-4 space-y-3 theme-transition">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">{current.emoji}</span>
@@ -77,7 +79,7 @@ const ChildDashboard = () => {
         </div>
 
         <Tabs defaultValue="tasks">
-          <TabsList className="w-full h-12 p-1 bg-muted">
+          <TabsList className="w-full h-12 p-1 bg-muted theme-transition">
             <TabsTrigger value="tasks" className="flex-1 h-full font-semibold data-[state=active]:gradient-primary data-[state=active]:text-primary-foreground">
               📝 Tasks
             </TabsTrigger>

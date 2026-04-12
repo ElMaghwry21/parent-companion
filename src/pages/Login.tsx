@@ -4,6 +4,7 @@ import { UserRole } from '@/types/parenting';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const Login = () => {
   const { login } = useAuth();
@@ -15,8 +16,11 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 gradient-primary">
-      <Card className="w-full max-w-md shadow-2xl border-0">
+    <div className="min-h-screen flex items-center justify-center p-4 gradient-primary relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      <Card className="w-full max-w-md shadow-2xl border-0 theme-transition">
         <CardHeader className="text-center space-y-3 pb-2">
           <div className="mx-auto w-20 h-20 rounded-2xl gradient-accent flex items-center justify-center shadow-lg">
             <span className="text-4xl">👨‍👩‍👧‍👦</span>
@@ -30,12 +34,12 @@ const Login = () => {
             value={name}
             onChange={e => setName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            className="h-12 text-base"
+            className="h-12 text-base theme-transition"
           />
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => setRole('parent')}
-              className={`h-24 rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all ${
+              className={`h-24 rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all theme-transition ${
                 role === 'parent'
                   ? 'border-primary bg-primary/10 shadow-md scale-[1.02]'
                   : 'border-border hover:border-primary/40 hover:bg-muted'
@@ -46,7 +50,7 @@ const Login = () => {
             </button>
             <button
               onClick={() => setRole('child')}
-              className={`h-24 rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all ${
+              className={`h-24 rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all theme-transition ${
                 role === 'child'
                   ? 'border-secondary bg-secondary/10 shadow-md scale-[1.02]'
                   : 'border-border hover:border-secondary/40 hover:bg-muted'
