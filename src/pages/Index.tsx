@@ -5,8 +5,7 @@ const PlaceholderIndex = () => {
   // PLACEHOLDER: Replace this entire return statement with the user's app.
   // The inline background color is intentionally not part of the design system.
   return (
-<div className="min-h-screen bg-gradient-to-br from-blue-900 via-black to-blue-800 animate-gradient-xy text-white flex items-center justify-center">      <img data-lovable-blank-page-placeholder="REMOVE_THIS" src="/placeholder.svg" alt="Your app will live here!" />
-    </div>
+<div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] animate-gradient-xy flex items-center justify-center text-white">    </div>
   );
 };
 
