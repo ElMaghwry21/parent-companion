@@ -1,98 +1,212 @@
 import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, UserRole } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ThemeToggle from '@/components/ThemeToggle';
 import { toast } from 'sonner';
+import { LogIn, UserPlus, Sparkles, ShieldCheck, User as UserIcon } from 'lucide-react';
+import BackgroundLayout from '@/components/layout/BackgroundLayout';
+import ScrollReveal from '@/components/animation/ScrollReveal';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const Login = () => {
-  const { signIn, signUp } = useAuth();
-  const [tab, setTab] = useState<'login' | 'signup'>('login');
+  const { signIn, signUp, logout } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<'parent' | 'child' | null>(null);
+  const [role, setRole] = useState<UserRole>('parent');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) return;
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading) return;
+
     setLoading(true);
-    const err = await signIn(email, password);
-    setLoading(false);
-    if (err) toast.error(err);
+
+    // Safety Timeout: 10 seconds max to prevent infinite "SYNCING" state
+    const loginTimeout = setTimeout(() => {
+      setLoading(false);
+      toast.error('Connection timed out. Please try the Repair button below.');
+    }, 10000);
+
+    try {
+      // Step 1: Nuclear Option - Manually clear Supabase tokens from localStorage
+      // This is exactly what the user does when they 'Clear Local Storage'
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Step 2: Attempt fresh sign in
+      const error = await signIn(email, password);
+      if (error) {
+        toast.error(error);
+        setLoading(false);
+        clearTimeout(loginTimeout);
+      }
+      // If success, AuthContext listener will pick it up and setLoading from there
+      // But we clear timeout anyway if we got a response
+      clearTimeout(loginTimeout);
+    } catch (err: any) {
+      toast.error('An unexpected error occurred. Try hitting Repair.');
+      setLoading(false);
+      clearTimeout(loginTimeout);
+    }
   };
 
-  const handleSignup = async () => {
-    if (!email || !password || !name.trim() || !role) return;
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
-    const err = await signUp(email, password, name.trim(), role);
+    const error = await signUp(email, password, name, role);
+    if (error) toast.error(error);
+    else toast.success('Account created! Please sign in.');
     setLoading(false);
-    if (err) toast.error(err);
-    else toast.success('Account created! You are now logged in.');
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 gradient-primary relative">
-      <div className="absolute top-4 right-4">
+    <BackgroundLayout variant="primary">
+      {/* Theme Toggle Positioned at Top Right */}
+      <div className="fixed top-6 right-6 z-[100]">
         <ThemeToggle />
       </div>
-      <Card className="w-full max-w-md shadow-2xl border-0 theme-transition">
-        <CardHeader className="text-center space-y-3 pb-2">
-          <div className="mx-auto w-20 h-20 rounded-2xl gradient-accent flex items-center justify-center shadow-lg">
-            <span className="text-4xl">👨‍👩‍👧‍👦</span>
+
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <ScrollReveal className="w-full max-w-md">
+          <div className="text-center mb-8 animate-float-slow">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl gradient-cyber shadow-[0_0_50px_rgba(147,51,234,0.5)] mb-4">
+              <Sparkles className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-5xl font-black tracking-tighter text-glow mb-2">
+              PARENT<span className="text-primary italic">COMPANION</span>
+            </h1>
+            <p className="text-muted-foreground font-medium uppercase tracking-[0.2em] text-xs">The ultimate family adventure</p>
           </div>
-          <CardTitle className="text-2xl font-bold">Smart Parenting</CardTitle>
-          <CardDescription className="text-base">Motivate, track & reward your kids</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-2">
-          <Tabs value={tab} onValueChange={v => setTab(v as 'login' | 'signup')}>
-            <TabsList className="w-full mb-4">
-              <TabsTrigger value="login" className="flex-1">Log In</TabsTrigger>
-              <TabsTrigger value="signup" className="flex-1">Sign Up</TabsTrigger>
-            </TabsList>
 
-            <TabsContent value="login" className="space-y-4">
-              <Input placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} className="h-12" />
-              <Input placeholder="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} className="h-12" onKeyDown={e => e.key === 'Enter' && handleLogin()} />
-              <Button className="w-full h-12 text-base font-semibold gradient-primary border-0 text-primary-foreground" disabled={loading || !email || !password} onClick={handleLogin}>
-                {loading ? 'Logging in...' : 'Log In 🚀'}
-              </Button>
-            </TabsContent>
+          <Card className="glass-premium border-none overflow-hidden hover-grow">
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-transparent p-1 border-b border-white/5 rounded-none h-14">
+                <TabsTrigger value="login" className="data-[state=active]:bg-white/10 data-[state=active]:text-primary font-bold text-sm transition-all rounded-xl">
+                  <LogIn className="w-4 h-4 mr-2" />
+                  LOGIN
+                </TabsTrigger>
+                <TabsTrigger value="signup" className="data-[state=active]:bg-white/10 data-[state=active]:text-primary font-bold text-sm transition-all rounded-xl">
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  JOIN SQUAD
+                </TabsTrigger>
+              </TabsList>
+              
+              <div className="p-6">
+                <TabsContent value="login" className="mt-0">
+                  <form onSubmit={handleSignIn} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase tracking-widest ml-1 text-muted-foreground">Email Address</Label>
+                      <Input 
+                        type="email" 
+                        placeholder="hero@adventure.com" 
+                        value={email} 
+                        onChange={e => setEmail(e.target.value)} 
+                        required 
+                        className="h-12 bg-white/5 border-white/10 rounded-xl focus:ring-primary/50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase tracking-widest ml-1 text-muted-foreground">Secret Key</Label>
+                      <Input 
+                        type="password" 
+                        placeholder="••••••••" 
+                        value={password} 
+                        onChange={e => setPassword(e.target.value)} 
+                        required 
+                        className="h-12 bg-white/5 border-white/10 rounded-xl focus:ring-primary/50"
+                      />
+                    </div>
+                    <Button type="submit" className="w-full h-14 text-md font-black gradient-cyber border-none shadow-xl hover:opacity-90 transition-all uppercase tracking-widest rounded-xl mt-4" disabled={loading}>
+                      {loading ? 'SYNCING...' : 'INITIATE LOGIN'}
+                    </Button>
+                  </form>
+                </TabsContent>
 
-            <TabsContent value="signup" className="space-y-4">
-              <Input placeholder="Your name" value={name} onChange={e => setName(e.target.value)} className="h-12" />
-              <Input placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} className="h-12" />
-              <Input placeholder="Password (min 6 chars)" type="password" value={password} onChange={e => setPassword(e.target.value)} className="h-12" />
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setRole('parent')}
-                  className={`h-24 rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all theme-transition ${
-                    role === 'parent' ? 'border-primary bg-primary/10 shadow-md scale-[1.02]' : 'border-border hover:border-primary/40 hover:bg-muted'
-                  }`}
-                >
-                  <span className="text-3xl">👨‍👩‍👧</span>
-                  <span className="font-semibold text-sm">Parent</span>
-                </button>
-                <button
-                  onClick={() => setRole('child')}
-                  className={`h-24 rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all theme-transition ${
-                    role === 'child' ? 'border-secondary bg-secondary/10 shadow-md scale-[1.02]' : 'border-border hover:border-secondary/40 hover:bg-muted'
-                  }`}
-                >
-                  <span className="text-3xl">🧒</span>
-                  <span className="font-semibold text-sm">Child</span>
-                </button>
+                <TabsContent value="signup" className="mt-0">
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase tracking-widest ml-1 text-muted-foreground">Full Name</Label>
+                      <Input 
+                        placeholder="Major Tom" 
+                        value={name} 
+                        onChange={e => setName(e.target.value)} 
+                        required 
+                        className="h-12 bg-white/5 border-white/10 rounded-xl"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase tracking-widest ml-1 text-muted-foreground">Email</Label>
+                      <Input 
+                        type="email" 
+                        placeholder="hero@adventure.com" 
+                        value={email} 
+                        onChange={e => setEmail(e.target.value)} 
+                        required 
+                        className="h-12 bg-white/5 border-white/10 rounded-xl"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase tracking-widest ml-1 text-muted-foreground">Passphrase</Label>
+                      <Input 
+                        type="password" 
+                        placeholder="••••••••" 
+                        value={password} 
+                        onChange={e => setPassword(e.target.value)} 
+                        required 
+                        className="h-12 bg-white/5 border-white/10 rounded-xl"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase tracking-widest ml-1 text-muted-foreground">Role</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setRole('parent')}
+                          className={`flex items-center justify-center p-3 rounded-xl border transition-all ${role === 'parent' ? 'bg-primary/20 border-primary text-primary' : 'bg-white/5 border-white/10 text-muted-foreground'}`}
+                        >
+                          <ShieldCheck className="w-4 h-4 mr-2" />
+                          <span className="text-xs font-black">PARENT</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRole('child')}
+                          className={`flex items-center justify-center p-3 rounded-xl border transition-all ${role === 'child' ? 'bg-secondary/20 border-secondary text-secondary' : 'bg-white/5 border-white/10 text-muted-foreground'}`}
+                        >
+                          <UserIcon className="w-4 h-4 mr-2" />
+                          <span className="text-xs font-black">CHILD</span>
+                        </button>
+                      </div>
+                    </div>
+                    <Button type="submit" className="w-full h-14 text-md font-black gradient-cyber border-none shadow-xl hover:opacity-90 transition-all uppercase tracking-widest rounded-xl mt-4" disabled={loading}>
+                      {loading ? 'CREATING...' : 'JOIN THE SQUAD'}
+                    </Button>
+                  </form>
+                </TabsContent>
               </div>
-              <Button className="w-full h-12 text-base font-semibold gradient-primary border-0 text-primary-foreground" disabled={loading || !email || !password || !name.trim() || !role} onClick={handleSignup}>
-                {loading ? 'Creating...' : 'Create Account 🎉'}
-              </Button>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+            </Tabs>
+          </Card>
+          
+          <div className="mt-8 text-center">
+            <button 
+              onClick={() => {
+                localStorage.clear();
+                window.location.reload();
+              }}
+              className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors py-2 px-4 rounded-lg border border-white/5 hover:border-primary/20 backdrop-blur-sm"
+            >
+              ⚠ Stuck? Click to Repair App & Reset Session
+            </button>
+          </div>
+        </ScrollReveal>
+      </div>
+    </BackgroundLayout>
   );
 };
 
