@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Companion - Project Presentation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #9333ea;
+            --secondary: #3b82f6;
+            --accent: #f43f5e;
+            --bg: #0f172a;
+        }
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: var(--bg);
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+        .orbitron { font-family: 'Orbitron', sans-serif; }
+        .slide {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            page-break-after: always;
+        }
+        .gradient-cyber {
+            background: linear-gradient(135deg, #9333ea 0%, #3b82f6 100%);
+        }
+        .text-glow {
+            text-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px border rgba(255, 255, 255, 0.05);
+            border-radius: 2rem;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            .slide { min-height: 100vh; padding: 0; margin: 0; }
+            body { background: white; color: black; }
+            .glass { background: #f8fafc; border: 1px solid #e2e8f0; color: black; }
+            .text-glow { text-shadow: none; color: black; }
+            .gradient-cyber { background: #9333ea !important; -webkit-print-color-adjust: exact; }
+            .bg-slate-900 { background: white !important; }
+            .text-white { color: black !important; }
+            .text-muted-foreground { color: #64748b !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-900">
+
+    <!-- Print Prompt -->
+    <div class="no-print fixed top-6 right-6 z-50">
+        <button onclick="window.print()" class="bg-purple-600 hover:bg-purple-700 text-white font-black py-4 px-8 rounded-2xl shadow-2xl transition-all transform hover:scale-105 orbitron">
+            SAVE AS PDF / اضغط للتحميل PDF
+        </button>
+    </div>
+
+    <!-- Slide 1: Title -->
+    <section class="slide">
+        <div class="absolute inset-0 opacity-20 pointer-events-none">
+            <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600 rounded-full blur-[120px]"></div>
+            <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600 rounded-full blur-[120px]"></div>
+        </div>
+        <div class="z-10 text-center">
+            <div class="inline-flex items-center justify-center w-24 h-24 rounded-3xl gradient-cyber mb-10 shadow-2xl">
+                <span class="text-5xl">👨‍👩‍👧‍👦</span>
+            </div>
+            <h1 class="text-7xl font-black orbitron text-glow mb-4 tracking-tighter">
+                PARENT <span class="text-purple-500 italic">COMPANION</span>
+            </h1>
+            <h2 class="text-3xl font-bold mb-8 text-blue-400">The Ultimate Family Adventure</h2>
+            <div class="h-1 w-32 gradient-cyber mx-auto mb-8 rounded-full"></div>
+            <p class="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+                تطبيق الرفيق الوالدي: تحويل الواجبات المنزلية إلى مغامرة عائلية شيقة باستخدام أحدث تقنيات الويب.
+            </p>
+        </div>
+    </section>
+
+    <!-- Slide 2: The Vision -->
+    <section class="slide bg-slate-950">
+        <div class="max-w-5xl w-full grid md:grid-cols-2 gap-12 items-center">
+            <div class="glass p-12 order-2 md:order-1">
+                <h3 class="text-4xl font-black mb-6 border-r-8 border-purple-500 pr-6">الرؤية والهدف <br><span class="text-xl text-purple-400 orbitron">THE VISION</span></h3>
+                <p class="text-lg text-slate-300 mb-6 leading-relaxed">
+                    نسعى لكسر روتين إدارة المهام المنزلية التقليدي الممل، واستبداله بنظام "تلعيب" (Gamification) يحفز الأطفال ويخفف العبء عن الآباء.
+                </p>
+                <ul class="space-y-4 text-slate-400">
+                    <li class="flex items-center">✅ تحويل المهام لمهمات (Missions)</li>
+                    <li class="flex items-center">✅ مكافآت حقيقية مقابل الإنجاز</li>
+                    <li class="flex items-center">✅ واجهات ممتعة وجذابة للطفل</li>
+                </ul>
+            </div>
+            <div class="text-center order-1 md:order-2">
+                <div class="text-9xl mb-6">🚀</div>
+                <h4 class="text-2xl font-black text-white orbitron">IGNITING RESPONSIBILITY</h4>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 3: Parent Interface -->
+    <section class="slide">
+        <div class="max-w-6xl w-full">
+            <div class="text-center mb-16">
+                <h3 class="text-5xl font-black mb-4 orbitron">MISSION CONTROL</h3>
+                <p class="text-2xl text-purple-400 font-bold">واجهة الوالدين: إدارة ذكية ومتابعة حية</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="glass p-8 text-center hover:bg-white/10 transition-all">
+                    <div class="text-4xl mb-4">📋</div>
+                    <h5 class="text-xl font-bold mb-2">إضافة المهام</h5>
+                    <p class="text-sm text-slate-400 italic">Add Missions with icons, points, and categories.</p>
+                </div>
+                <div class="glass p-8 text-center hover:bg-white/10 transition-all">
+                    <div class="text-4xl mb-4">👀</div>
+                    <h5 class="text-xl font-bold mb-2">مراجعة المهام</h5>
+                    <p class="text-sm text-slate-400 italic">Review completed tasks and approve the rewards.</p>
+                </div>
+                <div class="glass p-8 text-center hover:bg-white/10 transition-all">
+                    <div class="text-4xl mb-4">📊</div>
+                    <h5 class="text-xl font-bold mb-2">تتبع التقدم</h5>
+                    <p class="text-sm text-slate-400 italic">Monitor daily and weekly squad efficiency.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 4: Child Interface -->
+    <section class="slide bg-slate-950">
+        <div class="max-w-6xl w-full">
+            <div class="text-center mb-16">
+                <h3 class="text-5xl font-black mb-4 orbitron">THE HERO'S JOURNEY</h3>
+                <p class="text-2xl text-blue-400 font-bold">واجهة الطفل: بطل يبحث عن النجاح</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="glass p-10 flex gap-6 items-start">
+                    <div class="text-5xl">🎯</div>
+                    <div>
+                        <h5 class="text-2xl font-bold mb-2">قائمة المهام اليومية</h5>
+                        <p class="text-slate-400">واجهة تفاعلية تعرض المهام المطلوبة بطريقة ممتعة للطفل ليشعر بالإنجاز عند كل "تيك".</p>
+                    </div>
+                </div>
+                <div class="glass p-10 flex gap-6 items-start">
+                    <div class="text-5xl">🏪</div>
+                    <div>
+                        <h5 class="text-2xl font-bold mb-2">متجر المكافآت</h5>
+                        <p class="text-slate-400">المكان الذي يحول فيه الطفل نقاطه إلى جوائز وافق عليها الوالدان مسبقاً.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 5: Tech Stack -->
+    <section class="slide">
+        <div class="max-w-4xl w-full text-center">
+            <h3 class="text-4xl font-black mb-12 orbitron tracking-widest text-glow">TECNOLOGY STACK</h3>
+            <div class="flex flex-wrap justify-center gap-6">
+                <div class="px-8 py-4 glass text-xl font-bold text-blue-400 border-blue-500/30">React.js</div>
+                <div class="px-8 py-4 glass text-xl font-bold text-teal-400 border-teal-500/30">Supabase</div>
+                <div class="px-8 py-4 glass text-xl font-bold text-sky-400 border-sky-500/30">Tailwind CSS</div>
+                <div class="px-8 py-4 glass text-xl font-bold text-indigo-400 border-indigo-500/30">TypeScript</div>
+                <div class="px-8 py-4 glass text-xl font-bold text-orange-400 border-orange-500/30">Vite</div>
+            </div>
+            <p class="mt-12 text-slate-400 text-lg">
+                بنية تحتية حديثة تضمن سرعة الأداء، أمان البيانات، ومزامنة اللحظة الفعلية (Real-time).
+            </p>
+        </div>
+    </section>
+
+    <!-- Slide 6: Final Message -->
+    <section class="slide gradient-cyber">
+        <div class="text-center">
+            <h3 class="text-6xl font-black mb-8 orbitron text-white">JOIN THE SQUAD</h3>
+            <p class="text-2xl mb-12 font-bold text-white/90">لنبدأ رحلة عائلية جديدة اليوم!</p>
+            <div class="text-8xl animate-bounce">🏠✨</div>
+        </div>
+        <div class="absolute bottom-10 text-xs font-bold uppercase tracking-widest opacity-50 orbitron">
+            Parent Companion Project v1.0
+        </div>
+    </section>
+
+</body>
+</html>
