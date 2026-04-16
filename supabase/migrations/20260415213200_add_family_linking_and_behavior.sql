@@ -1,4 +1,4 @@
-
+ 
 -- Add parent_id to profiles to link children to parents
 ALTER TABLE public.profiles ADD COLUMN parent_id UUID REFERENCES auth.users(id);
 
