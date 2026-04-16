@@ -22,10 +22,19 @@ const ChildDashboard = () => {
   const childId = user?.id || '';
 
   const refresh = useCallback(async () => {
-    const [t, s, p] = await Promise.all([getTasks(), getSubmissions(), getChildPoints(childId)]);
-    setTasks(t);
-    setSubmissions(s);
-    setPoints(p);
+    if (!childId) return;
+    try {
+      const [t, s, p] = await Promise.all([
+        getTasks(), 
+        getSubmissions(childId, 'child'), 
+        getChildPoints(childId)
+      ]);
+      setTasks(t);
+      setSubmissions(s);
+      setPoints(p);
+    } catch (err) {
+      console.error("Child refresh failed:", err);
+    }
   }, [childId]);
 
   useEffect(() => { if (childId) refresh(); }, [childId, refresh]);

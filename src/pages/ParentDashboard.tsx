@@ -21,24 +21,47 @@ const ParentDashboard = () => {
   const [childPoints, setChildPoints] = useState(0);
 
   const refresh = useCallback(async () => {
-    const [t, s] = await Promise.all([getTasks(), getSubmissions()]);
-    setTasks(t);
-    setSubmissions(s);
-    if (s.length > 0) {
-      const pts = await getChildPoints(s[0].child_id);
-      setChildPoints(pts);
+    if (!user) return;
+    try {
+      const [t, s] = await Promise.all([
+        getTasks(user.id), 
+        getSubmissions(user.id, 'parent')
+      ]);
+      setTasks(t);
+      setSubmissions(s);
+      
+      // Calculate total points across all seen children (or first one found)
+      if (s.length > 0) {
+        // Collect unique child IDs from submissions
+        const childIds = Array.from(new Set(s.map(sub => sub.child_id)));
+        if (childIds.length > 0) {
+          // For now, we fetch points for the first child found, 
+          // but we do it safely.
+          const pts = await getChildPoints(childIds[0]);
+          setChildPoints(pts);
+        }
+      }
+    } catch (err) {
+      console.error("Refresh failed:", err);
+      toast.error("Failed to sync data");
     }
-  }, []);
+  }, [user]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => { 
+    if (user) refresh(); 
+  }, [user, refresh]);
 
   const pendingCount = submissions.filter(s => s.status === 'pending').length;
   const { current } = getLevelInfo(childPoints);
 
   const handleDelete = async (id: string) => {
-    await deleteTask(id);
-    refresh();
-    toast.success('Task deleted');
+    try {
+      await deleteTask(id);
+      await refresh();
+      toast.success('Task deleted');
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete task");
+    }
   };
 
   return (

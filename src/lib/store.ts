@@ -20,6 +20,7 @@ export type SubmissionRow = {
   earned_points: number;
   proof_image_url: string | null;
   submitted_at: string;
+  task?: TaskRow;
 };
 
 export type RedemptionRow = {
@@ -46,8 +47,18 @@ export const REWARDS: Reward[] = [
 ];
 
 // Tasks
-export async function getTasks(): Promise<TaskRow[]> {
-  const { data } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
+export async function getTasks(parentId?: string): Promise<TaskRow[]> {
+  let query = supabase.from('tasks').select('*').order('created_at', { ascending: false });
+  
+  if (parentId) {
+    query = query.eq('created_by', parentId);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("Error fetching tasks:", error);
+    throw error;
+  }
   return (data as TaskRow[]) || [];
 }
 
@@ -62,12 +73,29 @@ export async function deleteTask(id: string) {
 }
 
 // Submissions
-export async function getSubmissions(): Promise<SubmissionRow[]> {
-  const { data } = await supabase.from('task_submissions').select('*').order('submitted_at', { ascending: false });
-  return (data as SubmissionRow[]) || [];
+export async function getSubmissions(userId: string, role: 'parent' | 'child'): Promise<SubmissionRow[]> {
+  let query = supabase.from('task_submissions').select('*, task:tasks(*)');
+  
+  if (role === 'parent') {
+    // Parent sees submissions for tasks THEY created
+    // Note: We use !inner to filter by the related table
+    query = supabase.from('task_submissions')
+      .select('*, task:tasks!inner(*)')
+      .eq('task.created_by', userId);
+  } else {
+    // Child sees ONLY their own submissions
+    query = query.eq('child_id', userId);
+  }
+
+  const { data, error } = await query.order('submitted_at', { ascending: false });
+  if (error) {
+    console.error("Error fetching submissions:", error);
+    throw error;
+  }
+  return (data as any[]) || [];
 }
 
-export async function addSubmission(sub: Omit<SubmissionRow, 'id' | 'submitted_at'>) {
+export async function addSubmission(sub: Omit<SubmissionRow, 'id' | 'submitted_at' | 'task'>) {
   const { error } = await supabase.from('task_submissions').insert(sub);
   if (error) throw error;
 }
@@ -83,6 +111,10 @@ export async function getChildPoints(childId: string): Promise<number> {
     supabase.from('task_submissions').select('earned_points').eq('child_id', childId).eq('status', 'approved'),
     supabase.from('redemptions').select('points_spent').eq('child_id', childId),
   ]);
+
+  if (subsRes.error) throw subsRes.error;
+  if (redemRes.error) throw redemRes.error;
+
   const earned = (subsRes.data || []).reduce((sum, s) => sum + s.earned_points, 0);
   const spent = (redemRes.data || []).reduce((sum, r) => sum + r.points_spent, 0);
   return earned - spent;

@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import type { Session } from '@supabase/supabase-js';
 
 export type UserRole = 'parent' | 'child';
 
@@ -30,19 +30,26 @@ export const useAuth = () => useContext(AuthContext);
 
 async function fetchProfile(userId: string): Promise<AppUser | null> {
   try {
-    // Add a strict 4s timeout to the database call
-    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('DB Timeout')), 4000));
-    const fetchPromise = supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('name, role')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
-    const { data } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+    if (error) {
+      console.error("Profile fetch error:", error);
+      return null;
+    }
+    
     if (!data) return null;
-    return { id: userId, name: data.name, role: data.role as UserRole };
+    
+    return { 
+      id: userId, 
+      name: data.name, 
+      role: data.role as UserRole 
+    };
   } catch (err) {
-    console.error("Profile fetch failed or timed out:", err);
+    console.error("Profile fetch failed:", err);
     return null;
   }
 }
@@ -51,52 +58,47 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const handleSession = useCallback(async (session: Session | null) => {
+    try {
+      if (session?.user) {
+        const profile = await fetchProfile(session.user.id);
+        setUser(profile);
+      } else {
+        setUser(null);
+      }
+    } catch (err) {
+      console.error("Handle session error:", err);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     let mounted = true;
-    const safetyTimeout = setTimeout(() => {
-      if (mounted) setLoading(false);
-    }, 5000);
-
-    const handleSession = async (session: any) => {
-      if (!mounted) return;
-      try {
-        if (session?.user) {
-          const profile = await fetchProfile(session.user.id);
-          if (mounted) setUser(profile);
-        } else {
-          if (mounted) setUser(null);
-        }
-      } catch (err) {
-        if (mounted) setUser(null);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-          clearTimeout(safetyTimeout);
-        }
-      }
-    };
 
     // Initial check
     supabase.auth.getSession().then(({ data: { session } }) => {
-      handleSession(session);
+      if (mounted) handleSession(session);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth Event:", event);
-      if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setLoading(false);
-      } else {
-        await handleSession(session);
+      if (mounted) {
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setLoading(false);
+        } else {
+          handleSession(session);
+        }
       }
     });
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      clearTimeout(safetyTimeout);
     };
-  }, []);
+  }, [handleSession]);
 
   const signUp = async (email: string, password: string, name: string, role: UserRole): Promise<string | null> => {
     try {
@@ -113,15 +115,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signIn = async (email: string, password: string): Promise<string | null> => {
     try {
-      // Step 1: Nuclear clear in memory state if possible
-      // Step 2: Attempt login with 8s timeout
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('SignIn Timeout')), 8000));
-      const signInPromise = supabase.auth.signInWithPassword({ email, password });
-      
-      const result = await Promise.race([signInPromise, timeoutPromise]) as any;
-      return result.error?.message || null;
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      return error?.message || null;
     } catch (err: any) {
-      return err.message || "Connection failed. Please try Repair.";
+      return err.message || "Connection failed. Please try again.";
     }
   };
 
@@ -130,7 +127,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await supabase.auth.signOut();
     } finally {
       setUser(null);
-      localStorage.clear(); // Complete wipe on logout for total safety
     }
   };
 
