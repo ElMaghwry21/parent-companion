@@ -43,7 +43,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <AuthProvider>
-          <BrowserRouter>
+          <BrowserRouter basename="/parent-companion/">
             <AppRoutes />
           </BrowserRouter>
         </AuthProvider>
