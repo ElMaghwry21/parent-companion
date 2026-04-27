@@ -96,7 +96,7 @@ export async function linkChild(childEmail: string, parentId: string) {
 
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ parent_id: parentId })
+      .update({ parent_id: parentId } as any)  
       .eq('id', data.id);
 
     if (updateError) throw updateError;
@@ -132,7 +132,7 @@ export async function getLinkedChildren(parentId: string) {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('parent_id', parentId)
+      .eq('parent_id' as any, parentId)
       .eq('role', 'child');
     if (error) throw error;
     return data || [];
