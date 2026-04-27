@@ -1,0 +1,23 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "Supabase",
+    "shadcn",
+    "lucide",
+    "sonner",
+    "vitest",
+    "lovable",
+    "clsx",
+    "radix",
+    "vaul",
+    "cmdk",
+    "tanstack",
+    "tailwindcss"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    "dist",
+    "*.lock"
+  ]
+}
