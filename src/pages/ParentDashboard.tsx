@@ -179,8 +179,18 @@ const ParentDashboard = () => {
                     </form>
                     <div className="mt-4 flex flex-wrap gap-2">
                        {linkedChildren.map(child => (
-                         <Badge key={child.id} variant="secondary" className="bg-white/5 border-white/10 py-1.5 px-3 rounded-lg text-[10px] font-black uppercase italic">
-                           {child.name}
+                         <Badge 
+                           key={child.id} 
+                           variant="secondary" 
+                           onClick={() => {
+                             if (localStorage.getItem('pc-guest-user')) {
+                               localStorage.setItem('pc-guest-user', JSON.stringify(child));
+                               window.location.reload();
+                             }
+                           }}
+                           className="bg-white/5 border-white/10 py-1.5 px-3 rounded-lg text-[10px] font-black uppercase italic cursor-pointer hover:bg-primary/20 transition-all"
+                         >
+                           {child.name} (View)
                          </Badge>
                        ))}
                     </div>
