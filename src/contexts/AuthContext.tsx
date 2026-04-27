@@ -62,9 +62,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       if (session?.user) {
         const profile = await fetchProfile(session.user.id);
-        setUser(profile);
+        if (profile) {
+          setUser(profile);
+        } else {
+          // Fallback for demo mode if profile fetch fails
+          console.warn("Profile not found, using demo fallback");
+          setUser({ id: session.user.id, name: 'Demo User', role: 'parent' });
+        }
       } else {
-        setUser(null);
+        // Check for local guest session
+        const localUser = localStorage.getItem('pc-guest-user');
+        if (localUser) {
+          setUser(JSON.parse(localUser));
+        } else {
+          setUser(null);
+        }
       }
     } catch (err) {
       console.error("Handle session error:", err);
@@ -80,12 +92,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Initial check
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (mounted) handleSession(session);
+    }).catch(() => {
+      if (mounted) handleSession(null);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth Event:", event);
       if (mounted) {
         if (event === 'SIGNED_OUT') {
+          localStorage.removeItem('pc-guest-user');
           setUser(null);
           setLoading(false);
         } else {
@@ -109,6 +124,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       return error?.message || null;
     } catch (err: any) {
+      // Offline fallback
+      if (err.message?.includes('fetch')) {
+        const mockUser: AppUser = { id: 'guest-' + Math.random(), name, role };
+        localStorage.setItem('pc-guest-user', JSON.stringify(mockUser));
+        setUser(mockUser);
+        return null;
+      }
       return err.message;
     }
   };
@@ -118,6 +140,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       return error?.message || null;
     } catch (err: any) {
+      // Offline fallback
+      if (err.message?.includes('fetch') || err.name === 'TypeError') {
+        console.warn("Server unreachable, entering Demo Mode");
+        const mockUser: AppUser = { 
+          id: 'demo-parent', 
+          name: 'Hero Parent', 
+          role: email.includes('child') ? 'child' : 'parent' 
+        };
+        localStorage.setItem('pc-guest-user', JSON.stringify(mockUser));
+        setUser(mockUser);
+        return null;
+      }
       return err.message || "Connection failed. Please try again.";
     }
   };
@@ -125,7 +159,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = async () => {
     try {
       await supabase.auth.signOut();
+    } catch (e) {
+      console.warn("Sign out failed, clearing local session");
     } finally {
+      localStorage.removeItem('pc-guest-user');
       setUser(null);
     }
   };

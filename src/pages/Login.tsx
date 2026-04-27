@@ -33,7 +33,6 @@ const Login = () => {
 
     try {
       // Step 1: Nuclear Option - Manually clear Supabase tokens from localStorage
-      // This is exactly what the user does when they 'Clear Local Storage'
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
           localStorage.removeItem(key);
@@ -46,9 +45,13 @@ const Login = () => {
         toast.error(error);
         setLoading(false);
         clearTimeout(loginTimeout);
+      } else {
+        // Check if we entered via Demo Mode
+        if (localStorage.getItem('pc-guest-user')) {
+          toast.success('Entering Demo Mode (Offline)');
+        }
       }
-      // If success, AuthContext listener will pick it up and setLoading from there
-      // But we clear timeout anyway if we got a response
+      // If success, AuthContext listener will pick it up
       clearTimeout(loginTimeout);
     } catch (err: any) {
       toast.error('An unexpected error occurred. Try hitting Repair.');
