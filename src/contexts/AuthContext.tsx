@@ -89,7 +89,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // Fallback for demo mode if profile fetch fails
           console.warn("Profile not found, using demo fallback");
           seedMockData();
-          setUser({ id: session.user.id, name: 'Demo User', role: 'parent' });
+          
+          const email = session.user.email || '';
+          const profiles = JSON.parse(localStorage.getItem('pc_local_profiles') || '[]');
+          const existingProfile = profiles.find((p: any) => 
+            (p.email && p.email.toLowerCase() === email.toLowerCase()) || 
+            (p.name && p.name.toLowerCase() === email.split('@')[0].toLowerCase())
+          );
+          
+          const role = existingProfile?.role || (email.toLowerCase().includes('child') ? 'child' : 'parent');
+          
+          setUser({ 
+            id: session.user.id, 
+            name: existingProfile?.name || email.split('@')[0] || 'Demo User', 
+            role 
+          });
         }
       } else {
         // Check for local guest session
@@ -178,7 +192,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           
           // Check if this user exists in local profiles (linked or previous session)
           const profiles = JSON.parse(localStorage.getItem('pc_local_profiles') || '[]');
-          const existingProfile = profiles.find((p: any) => p.email === email || p.name === email.split('@')[0]);
+          const existingProfile = profiles.find((p: any) => 
+            (p.email && p.email.toLowerCase() === email.toLowerCase()) || 
+            (p.name && p.name.toLowerCase() === email.split('@')[0].toLowerCase())
+          );
           
           const mockUser: AppUser = { 
             id: existingProfile?.id || 'demo-' + Math.random().toString(36).substr(2, 9), 
@@ -198,7 +215,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.warn("Server unreachable (thrown error), entering Demo Mode");
         
         const profiles = JSON.parse(localStorage.getItem('pc_local_profiles') || '[]');
-        const existingProfile = profiles.find((p: any) => p.email === email || p.name === email.split('@')[0]);
+        const existingProfile = profiles.find((p: any) => 
+          (p.email && p.email.toLowerCase() === email.toLowerCase()) || 
+          (p.name && p.name.toLowerCase() === email.split('@')[0].toLowerCase())
+        );
 
         const mockUser: AppUser = { 
           id: existingProfile?.id || 'demo-' + Math.random().toString(36).substr(2, 9), 
