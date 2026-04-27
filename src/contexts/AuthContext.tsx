@@ -173,14 +173,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
-        // If the error message indicates a network failure, trigger demo mode
         if (error.message.toLowerCase().includes('fetch') || error.message.toLowerCase().includes('network')) {
           console.warn("Server unreachable (returned error), entering Demo Mode");
+          
+          // Check if this user exists in local profiles (linked or previous session)
+          const profiles = JSON.parse(localStorage.getItem('pc_local_profiles') || '[]');
+          const existingProfile = profiles.find((p: any) => p.email === email || p.name === email.split('@')[0]);
+          
           const mockUser: AppUser = { 
-            id: 'demo-parent', 
-            name: email.split('@')[0], 
-            role: email.toLowerCase().includes('child') ? 'child' : 'parent' 
+            id: existingProfile?.id || 'demo-' + Math.random().toString(36).substr(2, 9), 
+            name: existingProfile?.name || email.split('@')[0], 
+            role: existingProfile?.role || (email.toLowerCase().includes('child') ? 'child' : 'parent') 
           };
+          
           localStorage.setItem('pc-guest-user', JSON.stringify(mockUser));
           setUser(mockUser);
           return null;
@@ -189,14 +194,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       return null;
     } catch (err: any) {
-      // Offline fallback for thrown errors
       if (err.message?.toLowerCase().includes('fetch') || err.name === 'TypeError') {
         console.warn("Server unreachable (thrown error), entering Demo Mode");
+        
+        const profiles = JSON.parse(localStorage.getItem('pc_local_profiles') || '[]');
+        const existingProfile = profiles.find((p: any) => p.email === email || p.name === email.split('@')[0]);
+
         const mockUser: AppUser = { 
-          id: 'demo-parent', 
-          name: email.split('@')[0], 
-          role: email.toLowerCase().includes('child') ? 'child' : 'parent' 
+          id: existingProfile?.id || 'demo-' + Math.random().toString(36).substr(2, 9), 
+          name: existingProfile?.name || email.split('@')[0], 
+          role: existingProfile?.role || (email.toLowerCase().includes('child') ? 'child' : 'parent') 
         };
+        
         localStorage.setItem('pc-guest-user', JSON.stringify(mockUser));
         setUser(mockUser);
         return null;
