@@ -104,9 +104,17 @@ export async function linkChild(childEmail: string, parentId: string) {
   } catch (err) {
     console.warn("Using local linking");
     const profiles = getLocal<any[]>(KEYS.PROFILES, []);
-    const child = profiles.find(p => p.role === 'child' && (p.name.includes(childEmail) || p.email === childEmail));
-    if (!child) throw new Error("Child not found locally. Ensure they logged in once.");
-    child.parent_id = parentId;
+    let child = profiles.find(p => p.role === 'child' && (p.name.includes(childEmail) || p.email === childEmail));
+    
+    if (!child) {
+      // Auto-create a child in Demo Mode to make it "just work"
+      console.log("Auto-creating child for demo");
+      child = { id: 'child-' + Math.random().toString(36).substr(2, 9), name: childEmail, role: 'child', parent_id: parentId };
+      profiles.push(child);
+    } else {
+      child.parent_id = parentId;
+    }
+    
     setLocal(KEYS.PROFILES, profiles);
     return child.name;
   }

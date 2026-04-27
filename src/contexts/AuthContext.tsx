@@ -54,6 +54,27 @@ async function fetchProfile(userId: string): Promise<AppUser | null> {
   }
 }
 
+const seedMockData = () => {
+  const KEYS = {
+    PROFILES: 'pc_local_profiles',
+    TASKS: 'pc_local_tasks',
+    SUBMISSIONS: 'pc_local_submissions'
+  };
+
+  if (!localStorage.getItem(KEYS.PROFILES)) {
+    localStorage.setItem(KEYS.PROFILES, JSON.stringify([
+      { id: 'mock-child-1', name: 'Junior Hero', role: 'child', parent_id: 'demo-parent' }
+    ]));
+  }
+
+  if (!localStorage.getItem(KEYS.TASKS)) {
+    localStorage.setItem(KEYS.TASKS, JSON.stringify([
+      { id: 't1', title: 'Clean the Spaceship (Room)', points: 50, type: 'fixed', created_by: 'demo-parent', created_at: new Date().toISOString() },
+      { id: 't2', title: 'Fuel Up (Eat Veggies)', points: 30, type: 'fixed', created_by: 'demo-parent', created_at: new Date().toISOString() }
+    ]));
+  }
+};
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,12 +88,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } else {
           // Fallback for demo mode if profile fetch fails
           console.warn("Profile not found, using demo fallback");
+          seedMockData();
           setUser({ id: session.user.id, name: 'Demo User', role: 'parent' });
         }
       } else {
         // Check for local guest session
         const localUser = localStorage.getItem('pc-guest-user');
         if (localUser) {
+          seedMockData();
           setUser(JSON.parse(localUser));
         } else {
           setUser(null);
