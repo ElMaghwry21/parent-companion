@@ -122,10 +122,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         password,
         options: { data: { name, role } },
       });
-      return error?.message || null;
+      
+      if (error) {
+        if (error.message.toLowerCase().includes('fetch')) {
+          const mockUser: AppUser = { id: 'guest-' + Math.random(), name, role };
+          localStorage.setItem('pc-guest-user', JSON.stringify(mockUser));
+          setUser(mockUser);
+          return null;
+        }
+        return error.message;
+      }
+      return null;
     } catch (err: any) {
-      // Offline fallback
-      if (err.message?.includes('fetch')) {
+      // Offline fallback for thrown errors
+      if (err.message?.toLowerCase().includes('fetch')) {
         const mockUser: AppUser = { id: 'guest-' + Math.random(), name, role };
         localStorage.setItem('pc-guest-user', JSON.stringify(mockUser));
         setUser(mockUser);
@@ -138,15 +148,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signIn = async (email: string, password: string): Promise<string | null> => {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      return error?.message || null;
+      
+      if (error) {
+        // If the error message indicates a network failure, trigger demo mode
+        if (error.message.toLowerCase().includes('fetch') || error.message.toLowerCase().includes('network')) {
+          console.warn("Server unreachable (returned error), entering Demo Mode");
+          const mockUser: AppUser = { 
+            id: 'demo-parent', 
+            name: email.split('@')[0], 
+            role: email.toLowerCase().includes('child') ? 'child' : 'parent' 
+          };
+          localStorage.setItem('pc-guest-user', JSON.stringify(mockUser));
+          setUser(mockUser);
+          return null;
+        }
+        return error.message;
+      }
+      return null;
     } catch (err: any) {
-      // Offline fallback
-      if (err.message?.includes('fetch') || err.name === 'TypeError') {
-        console.warn("Server unreachable, entering Demo Mode");
+      // Offline fallback for thrown errors
+      if (err.message?.toLowerCase().includes('fetch') || err.name === 'TypeError') {
+        console.warn("Server unreachable (thrown error), entering Demo Mode");
         const mockUser: AppUser = { 
           id: 'demo-parent', 
-          name: 'Hero Parent', 
-          role: email.includes('child') ? 'child' : 'parent' 
+          name: email.split('@')[0], 
+          role: email.toLowerCase().includes('child') ? 'child' : 'parent' 
         };
         localStorage.setItem('pc-guest-user', JSON.stringify(mockUser));
         setUser(mockUser);
