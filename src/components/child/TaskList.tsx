@@ -20,8 +20,6 @@ const TaskList = ({ tasks, submissions, childId, onSubmit }: Props) => {
   const [proofPreviews, setProofPreviews] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState<string | null>(null);
 
-  const [submitting, setSubmitting] = useState<string | null>(null);
-
   const isToday = (dateString: string) => {
     const today = new Date();
     const date = new Date(dateString);
