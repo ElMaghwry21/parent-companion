@@ -8,6 +8,7 @@ export type TaskRow = {
   type: string;
   total_hours: number | null;
   requires_proof: boolean;
+  is_routine: boolean; // New field
   created_at: string;
 };
 
@@ -72,6 +73,8 @@ const setLocal = <T>(key: string, data: T) => {
   localStorage.setItem(`pc_local_${key}`, JSON.stringify(data));
 };
 
+const generateId = () => Math.random().toString(36).substr(2, 9);
+
 // Data Keys
 const KEYS = {
   PROFILES: 'profiles',
@@ -84,8 +87,8 @@ const KEYS = {
 // Linking
 export async function linkChild(childEmail: string, parentId: string) {
   try {
-    const { data, error } = await supabase
-      .from('profiles')
+    const { data, error }: any = await supabase
+      .from('profiles' as any)
       .select('id, name')
       .eq('role', 'child')
       .ilike('name', `%${childEmail}%`)
@@ -95,7 +98,7 @@ export async function linkChild(childEmail: string, parentId: string) {
     if (!data) throw new Error("Child account not found.");
 
     const { error: updateError } = await supabase
-      .from('profiles')
+      .from('profiles' as any)
       .update({ parent_id: parentId } as any)  
       .eq('id', data.id);
 
@@ -104,17 +107,17 @@ export async function linkChild(childEmail: string, parentId: string) {
   } catch (err) {
     console.warn("Using local linking");
     const profiles = getLocal<any[]>(KEYS.PROFILES, []);
-    let child = profiles.find(p => p.role === 'child' && (p.name.includes(childEmail) || p.email === childEmail));
+    let child = profiles.find(p => p.role === 'child' && (p.name?.includes(childEmail) || p.email === childEmail));
     
     if (!child) {
-      // Auto-create a child in Demo Mode to make it "just work"
       console.log("Auto-creating child for demo");
       child = { 
-        id: 'child-' + Math.random().toString(36).substr(2, 9), 
+        id: 'child-' + generateId(), 
         name: childEmail.split('@')[0], 
         email: childEmail.includes('@') ? childEmail : undefined,
         role: 'child', 
-        parent_id: parentId 
+        parent_id: parentId,
+        is_routine: false 
       };
       profiles.push(child);
     } else {
@@ -128,9 +131,15 @@ export async function linkChild(childEmail: string, parentId: string) {
 }
 
 export async function getLinkedChildren(parentId: string) {
+  const isDemo = !!localStorage.getItem('pc-guest-user');
+  if (isDemo) {
+    const profiles = getLocal<any[]>(KEYS.PROFILES, []);
+    return profiles.filter(p => p.parent_id === parentId && p.role === 'child');
+  }
+
   try {
-    const { data, error } = await supabase
-      .from('profiles')
+    const { data, error }: any = await supabase
+      .from('profiles' as any)
       .select('*')
       .eq('parent_id' as any, parentId)
       .eq('role', 'child');
@@ -144,10 +153,17 @@ export async function getLinkedChildren(parentId: string) {
 
 // Tasks
 export async function getTasks(parentId?: string): Promise<TaskRow[]> {
+  const isDemo = !!localStorage.getItem('pc-guest-user');
+  
+  if (isDemo) {
+    const tasks = getLocal<TaskRow[]>(KEYS.TASKS, []);
+    return parentId ? tasks.filter(t => t.created_by === parentId) : tasks;
+  }
+
   try {
-    let query = supabase.from('tasks').select('*').order('created_at', { ascending: false });
+    let query = supabase.from('tasks' as any).select('*').order('created_at', { ascending: false });
     if (parentId) query = query.eq('created_by', parentId);
-    const { data, error } = await query;
+    const { data, error }: any = await query;
     if (error) throw error;
     return (data as TaskRow[]) || [];
   } catch (err) {
@@ -157,19 +173,34 @@ export async function getTasks(parentId?: string): Promise<TaskRow[]> {
 }
 
 export async function addTask(task: Omit<TaskRow, 'id' | 'created_at'>) {
+  const isDemo = !!localStorage.getItem('pc-guest-user');
+  if (isDemo) {
+    const tasks = getLocal<TaskRow[]>(KEYS.TASKS, []);
+    const newTask = { ...task, id: generateId(), created_at: new Date().toISOString() };
+    setLocal(KEYS.TASKS, [...tasks, newTask]);
+    return;
+  }
+
   try {
-    const { error } = await supabase.from('tasks').insert(task);
+    const { error } = await supabase.from('tasks' as any).insert(task as any);
     if (error) throw error;
   } catch (err) {
     const tasks = getLocal<TaskRow[]>(KEYS.TASKS, []);
-    const newTask = { ...task, id: Math.random().toString(36), created_at: new Date().toISOString() };
+    const newTask = { ...task, id: generateId(), created_at: new Date().toISOString() };
     setLocal(KEYS.TASKS, [...tasks, newTask]);
   }
 }
 
 export async function deleteTask(id: string) {
+  const isDemo = !!localStorage.getItem('pc-guest-user');
+  if (isDemo) {
+    const tasks = getLocal<TaskRow[]>(KEYS.TASKS, []);
+    setLocal(KEYS.TASKS, tasks.filter(t => t.id !== id));
+    return;
+  }
+
   try {
-    const { error } = await supabase.from('tasks').delete().eq('id', id);
+    const { error } = await supabase.from('tasks' as any).delete().eq('id', id);
     if (error) throw error;
   } catch (err) {
     const tasks = getLocal<TaskRow[]>(KEYS.TASKS, []);
@@ -179,14 +210,22 @@ export async function deleteTask(id: string) {
 
 // Submissions
 export async function getSubmissions(userId: string, role: 'parent' | 'child'): Promise<SubmissionRow[]> {
+  const isDemo = !!localStorage.getItem('pc-guest-user');
+  if (isDemo) {
+    const subs = getLocal<SubmissionRow[]>(KEYS.SUBMISSIONS, []);
+    const tasks = getLocal<TaskRow[]>(KEYS.TASKS, []);
+    const userSubs = subs.filter(s => role === 'parent' ? true : s.child_id === userId);
+    return userSubs.map(s => ({ ...s, task: tasks.find(t => t.id === s.task_id) }));
+  }
+
   try {
     let query;
     if (role === 'parent') {
-      query = supabase.from('task_submissions').select('*, task:tasks!inner(*)').eq('task.created_by', userId);
+      query = supabase.from('task_submissions' as any).select('*, task:tasks!inner(*)').eq('task.created_by', userId);
     } else {
-      query = supabase.from('task_submissions').select('*, task:tasks(*)').eq('child_id', userId);
+      query = supabase.from('task_submissions' as any).select('*, task:tasks(*)').eq('child_id', userId);
     }
-    const { data, error } = await query.order('submitted_at', { ascending: false });
+    const { data, error }: any = await query.order('submitted_at', { ascending: false });
     if (error) throw error;
     return (data as any[]) || [];
   } catch (err) {
@@ -198,24 +237,39 @@ export async function getSubmissions(userId: string, role: 'parent' | 'child'): 
 }
 
 export async function addSubmission(sub: Omit<SubmissionRow, 'id' | 'submitted_at' | 'task'>) {
+  const isDemo = !!localStorage.getItem('pc-guest-user');
+  if (isDemo) {
+    const subs = getLocal<SubmissionRow[]>(KEYS.SUBMISSIONS, []);
+    const newSub = { ...sub, id: generateId(), submitted_at: new Date().toISOString() };
+    setLocal(KEYS.SUBMISSIONS, [...subs, newSub]);
+    return;
+  }
+
   try {
-    const { data: task } = await supabase.from('tasks').select('*').eq('id', sub.task_id).single();
+    const { data: task }: any = await supabase.from('tasks' as any).select('*').eq('id', sub.task_id).single();
     let earnedPoints = sub.earned_points;
     if (task && task.type === 'time-based' && task.total_hours && sub.hours_spent) {
       earnedPoints = Math.round(task.points * Math.min(sub.hours_spent / task.total_hours, 1));
     }
-    const { error } = await supabase.from('task_submissions').insert({ ...sub, earned_points: earnedPoints });
+    const { error } = await supabase.from('task_submissions' as any).insert({ ...sub, earned_points: earnedPoints } as any);
     if (error) throw error;
   } catch (err) {
     const subs = getLocal<SubmissionRow[]>(KEYS.SUBMISSIONS, []);
-    const newSub = { ...sub, id: Math.random().toString(36), submitted_at: new Date().toISOString() };
+    const newSub = { ...sub, id: generateId(), submitted_at: new Date().toISOString() };
     setLocal(KEYS.SUBMISSIONS, [...subs, newSub]);
   }
 }
 
 export async function updateSubmissionStatus(id: string, status: 'approved' | 'rejected') {
+  const isDemo = !!localStorage.getItem('pc-guest-user');
+  if (isDemo) {
+    const subs = getLocal<SubmissionRow[]>(KEYS.SUBMISSIONS, []);
+    setLocal(KEYS.SUBMISSIONS, subs.map(s => s.id === id ? { ...s, status } : s));
+    return;
+  }
+
   try {
-    const { error } = await supabase.from('task_submissions').update({ status }).eq('id', id);
+    const { error } = await supabase.from('task_submissions' as any).update({ status } as any).eq('id', id);
     if (error) throw error;
   } catch (err) {
     const subs = getLocal<SubmissionRow[]>(KEYS.SUBMISSIONS, []);
@@ -225,22 +279,36 @@ export async function updateSubmissionStatus(id: string, status: 'approved' | 'r
 
 // Behavior
 export async function addBehaviorPoints(childId: string, parentId: string, points: number, reason: string) {
+  const isDemo = !!localStorage.getItem('pc-guest-user');
+  if (isDemo) {
+    const logs = getLocal<BehaviorLogRow[]>(KEYS.BEHAVIOR, []);
+    const newLog = { id: generateId(), child_id: childId, parent_id: parentId, points, reason, created_at: new Date().toISOString() };
+    setLocal(KEYS.BEHAVIOR, [...logs, newLog]);
+    return;
+  }
+
   try {
-    const { error } = await supabase.from('behavior_logs').insert({ child_id: childId, parent_id: parentId, points, reason });
+    const { error } = await supabase.from('behavior_logs' as any).insert({ child_id: childId, parent_id: parentId, points, reason } as any);
     if (error) throw error;
   } catch (err) {
     const logs = getLocal<BehaviorLogRow[]>(KEYS.BEHAVIOR, []);
-    const newLog = { id: Math.random().toString(36), child_id: childId, parent_id: parentId, points, reason, created_at: new Date().toISOString() };
+    const newLog = { id: generateId(), child_id: childId, parent_id: parentId, points, reason, created_at: new Date().toISOString() };
     setLocal(KEYS.BEHAVIOR, [...logs, newLog]);
   }
 }
 
 export async function getBehaviorLogs(userId: string, role: 'parent' | 'child') {
+  const isDemo = !!localStorage.getItem('pc-guest-user');
+  if (isDemo) {
+    const logs = getLocal<BehaviorLogRow[]>(KEYS.BEHAVIOR, []);
+    return logs.filter(l => role === 'parent' ? l.parent_id === userId : l.child_id === userId);
+  }
+
   try {
-    let query = supabase.from('behavior_logs').select('*');
+    let query = supabase.from('behavior_logs' as any).select('*');
     if (role === 'parent') query = query.eq('parent_id', userId);
     else query = query.eq('child_id', userId);
-    const { data, error } = await query.order('created_at', { ascending: false });
+    const { data, error }: any = await query.order('created_at', { ascending: false });
     if (error) throw error;
     return (data as BehaviorLogRow[]) || [];
   } catch (err) {
@@ -252,15 +320,15 @@ export async function getBehaviorLogs(userId: string, role: 'parent' | 'child') 
 // Points
 export async function getChildPoints(childId: string): Promise<number> {
   try {
-    const [subsRes, redemRes, behaviorRes] = await Promise.all([
-      supabase.from('task_submissions').select('earned_points').eq('child_id', childId).eq('status', 'approved'),
-      supabase.from('redemptions').select('points_spent').eq('child_id', childId),
-      supabase.from('behavior_logs').select('points').eq('child_id', childId),
+    const [subsRes, redemRes, behaviorRes]: any = await Promise.all([
+      supabase.from('task_submissions' as any).select('earned_points').eq('child_id', childId).eq('status', 'approved'),
+      supabase.from('redemptions' as any).select('points_spent').eq('child_id', childId),
+      supabase.from('behavior_logs' as any).select('points').eq('child_id', childId),
     ]);
     if (subsRes.error) throw subsRes.error;
-    const earnedTasks = (subsRes.data || []).reduce((sum, s) => sum + s.earned_points, 0);
-    const earnedBehavior = (behaviorRes.data || []).reduce((sum, b) => sum + b.points, 0);
-    const spent = (redemRes.data || []).reduce((sum, r) => sum + r.points_spent, 0);
+    const earnedTasks = (subsRes.data || []).reduce((sum: number, s: any) => sum + s.earned_points, 0);
+    const earnedBehavior = (behaviorRes.data || []).reduce((sum: number, b: any) => sum + b.points, 0);
+    const spent = (redemRes.data || []).reduce((sum: number, r: any) => sum + r.points_spent, 0);
     return (earnedTasks + earnedBehavior) - spent;
   } catch (err) {
     const subs = getLocal<SubmissionRow[]>(KEYS.SUBMISSIONS, []).filter(s => s.child_id === childId && s.status === 'approved');
@@ -274,12 +342,20 @@ export async function getChildPoints(childId: string): Promise<number> {
 
 // Redemptions
 export async function addRedemption(redemption: Omit<RedemptionRow, 'id' | 'redeemed_at'>) {
+  const isDemo = !!localStorage.getItem('pc-guest-user');
+  if (isDemo) {
+    const redems = getLocal<RedemptionRow[]>(KEYS.REDEMPTIONS, []);
+    const newRedem = { ...redemption, id: generateId(), redeemed_at: new Date().toISOString() };
+    setLocal(KEYS.REDEMPTIONS, [...redems, newRedem]);
+    return;
+  }
+
   try {
-    const { error } = await supabase.from('redemptions').insert(redemption);
+    const { error } = await supabase.from('redemptions' as any).insert(redemption as any);
     if (error) throw error;
   } catch (err) {
     const redems = getLocal<RedemptionRow[]>(KEYS.REDEMPTIONS, []);
-    const newRedem = { ...redemption, id: Math.random().toString(36), redeemed_at: new Date().toISOString() };
+    const newRedem = { ...redemption, id: generateId(), redeemed_at: new Date().toISOString() };
     setLocal(KEYS.REDEMPTIONS, [...redems, newRedem]);
   }
 }
@@ -288,12 +364,12 @@ export async function addRedemption(redemption: Omit<RedemptionRow, 'id' | 'rede
 export async function uploadProofImage(file: File, userId: string): Promise<string> {
   try {
     const ext = file.name.split('.').pop();
-    const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+    const path = `${userId}/${generateId()}.${ext}`;
     const { error } = await supabase.storage.from('task-proofs').upload(path, file);
     if (error) throw error;
     const { data } = supabase.storage.from('task-proofs').getPublicUrl(path);
     return data.publicUrl;
   } catch (err) {
-    return URL.createObjectURL(file); // Temporary local URL
+    return URL.createObjectURL(file);
   }
 }

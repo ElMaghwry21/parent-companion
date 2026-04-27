@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { LogIn, UserPlus, Sparkles, ShieldCheck, User as UserIcon } from 'lucide-react';
+import { LogIn, UserPlus, Sparkles, ShieldCheck, User as UserIcon, Rocket } from 'lucide-react';
 import BackgroundLayout from '@/components/layout/BackgroundLayout';
 import ScrollReveal from '@/components/animation/ScrollReveal';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -129,6 +129,44 @@ const Login = () => {
                     <Button type="submit" className="w-full h-14 text-md font-black gradient-cyber border-none shadow-xl hover:opacity-90 transition-all uppercase tracking-widest rounded-xl mt-4" disabled={loading}>
                       {loading ? 'SYNCING...' : 'INITIATE LOGIN'}
                     </Button>
+                    
+                    {/* Demo Mode Role Selector */}
+                    <div className="pt-4 grid grid-cols-2 gap-3 border-t border-white/5 mt-6">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEmail('parent@demo.com');
+                          setPassword('123456');
+                          // Trigger login manually
+                          setTimeout(() => {
+                            const form = document.querySelector('form');
+                            form?.requestSubmit();
+                          }, 100);
+                        }}
+                        className="h-10 rounded-xl border-white/10 hover:bg-primary/20 text-[10px] font-black uppercase tracking-tighter"
+                      >
+                        Demo Parent
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEmail('child@demo.com');
+                          setPassword('123456');
+                          // Trigger login manually
+                          setTimeout(() => {
+                            const form = document.querySelector('form');
+                            form?.requestSubmit();
+                          }, 100);
+                        }}
+                        className="h-10 rounded-xl border-white/10 hover:bg-secondary/20 text-[10px] font-black uppercase tracking-tighter"
+                      >
+                        Demo Child
+                      </Button>
+                    </div>
                   </form>
                 </TabsContent>
 
@@ -199,12 +237,17 @@ const Login = () => {
           <div className="mt-8 text-center">
             <button 
               onClick={() => {
-                localStorage.clear();
+                // Only clear auth and session, preserve local tasks/progress
+                Object.keys(localStorage).forEach(key => {
+                  if (key.includes('auth-token') || key === 'pc-guest-user') {
+                    localStorage.removeItem(key);
+                  }
+                });
                 window.location.reload();
               }}
               className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors py-2 px-4 rounded-lg border border-white/5 hover:border-primary/20 backdrop-blur-sm"
             >
-              ⚠ Stuck? Click to Repair App & Reset Session
+              ⚠ Stuck? Click to Repair Session
             </button>
           </div>
         </ScrollReveal>

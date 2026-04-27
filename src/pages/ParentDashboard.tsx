@@ -53,6 +53,30 @@ const ParentDashboard = () => {
     if (user) refresh(); 
   }, [user, refresh]);
 
+  const handleAddTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskTitle || !newTaskPoints || !user) return;
+    
+    try {
+      await addTask({
+        title: newTaskTitle,
+        points: parseInt(newTaskPoints),
+        type: newTaskType,
+        created_by: user.id,
+        requires_proof: requiresProof,
+        is_routine: isRoutine,
+        total_hours: newTaskType === 'time-based' ? 1 : null
+      });
+      setNewTaskTitle('');
+      setNewTaskPoints('');
+      setIsRoutine(false);
+      refresh();
+      toast.success("Mission deployed to the squad! 🚀");
+    } catch (err) {
+      toast.error("Deployment failed");
+    }
+  };
+
   const handleLinkChild = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !childEmail) return;
