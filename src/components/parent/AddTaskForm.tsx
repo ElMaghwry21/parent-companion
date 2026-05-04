@@ -21,7 +21,6 @@ const AddTaskForm = ({ onTaskAdded }: Props) => {
   const [type, setType] = useState<'simple' | 'time-based'>('simple');
   const [totalHours, setTotalHours] = useState('');
   const [requiresProof, setRequiresProof] = useState(false);
-  const [isRoutine, setIsRoutine] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,7 +36,6 @@ const AddTaskForm = ({ onTaskAdded }: Props) => {
         type,
         total_hours: type === 'time-based' ? Number(totalHours) : null,
         requires_proof: requiresProof,
-        is_routine: isRoutine,
       });
 
       setTitle('');
@@ -45,7 +43,6 @@ const AddTaskForm = ({ onTaskAdded }: Props) => {
       setTotalHours('');
       setType('simple');
       setRequiresProof(false);
-      setIsRoutine(false);
       onTaskAdded();
       toast.success('Task added successfully!');
     } catch (err: any) {
@@ -127,20 +124,7 @@ const AddTaskForm = ({ onTaskAdded }: Props) => {
             )}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="flex items-center justify-between p-4 glass-premium rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isRoutine ? 'bg-secondary/20 text-secondary shadow-[0_0_15px_rgba(236,72,153,0.3)]' : 'bg-muted text-muted-foreground'}`}>
-                  {isRoutine ? '🔁' : '🎯'}
-                </div>
-                <div className="space-y-0.5 text-left">
-                  <Label className="font-black text-xs uppercase tracking-widest cursor-pointer">Daily Routine</Label>
-                  <p className="text-[9px] text-muted-foreground uppercase font-black tracking-tighter italic">Resets every midnight</p>
-                </div>
-              </div>
-              <Switch checked={isRoutine} onCheckedChange={setIsRoutine} className="data-[state=checked]:bg-secondary" />
-            </div>
-
+          <div className="grid gap-4 md:grid-cols-1">
             <div className="flex items-center justify-between p-4 glass-premium rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${requiresProof ? 'bg-primary/20 text-primary shadow-[0_0_15px_rgba(168,85,247,0.3)]' : 'bg-muted text-muted-foreground'}`}>

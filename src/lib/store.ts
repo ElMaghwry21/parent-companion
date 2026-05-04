@@ -79,15 +79,16 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 
 // Linking
 export async function linkChild(childEmail: string, parentId: string) {
+  // Search by email (assuming we'll add it) or exact name for now
   const { data, error }: any = await supabase
     .from('profiles' as any)
     .select('id, name')
     .eq('role', 'child')
-    .ilike('name', `%${childEmail}%`)
+    .or(`email.eq.${childEmail},name.eq.${childEmail}`)
     .maybeSingle();
   
   if (error) throw error;
-  if (!data) throw new Error("Child account not found.");
+  if (!data) throw new Error("Child account not found. Make sure the email/name is correct.");
 
   const { error: updateError } = await supabase
     .from('profiles' as any)
