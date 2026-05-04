@@ -1,8 +1,10 @@
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { REWARDS, addRedemption } from '@/lib/store';
+import { addRedemption, getRewards, Reward, addNotification } from '@/lib/store';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Store, ShoppingCart, Sparkles, Lock } from 'lucide-react';
+import { Store, ShoppingCart, Sparkles, Lock, Loader2 } from 'lucide-react';
 
 interface Props {
   childId: string;
@@ -11,6 +13,26 @@ interface Props {
 }
 
 const RewardsStore = ({ childId, points, onRedeem }: Props) => {
+  const [rewards, setRewards] = useState<Reward[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchRewards = useCallback(async () => {
+    if (!childId) return;
+    try {
+      setLoading(true);
+      const data = await getRewards(childId, 'child');
+      setRewards(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [childId]);
+
+  useEffect(() => {
+    fetchRewards();
+  }, [fetchRewards]);
+
   const handleRedeem = async (rewardId: string, cost: number, name: string) => {
     if (points < cost) {
       toast.error('Not enough treasure! Complete more quests. 🛡️');
@@ -18,6 +40,18 @@ const RewardsStore = ({ childId, points, onRedeem }: Props) => {
     }
     try {
       await addRedemption({ child_id: childId, reward_id: rewardId, points_spent: cost });
+      
+      const { data } = await supabase.from('profiles').select('parent_id').eq('id', childId).maybeSingle();
+      const parentId = data?.parent_id;
+
+      if (parentId) {
+        await addNotification(
+          parentId,
+          'New Reward Redeemed! 🎁',
+          `A child just redeemed "${name}" for ${cost} XP.`
+        );
+      }
+
       onRedeem();
       toast.success(`🎊 EPIC LOOT: You redeemed "${name}"! Check your inventory. 🥳`);
     } catch (err: any) {
@@ -39,7 +73,11 @@ const RewardsStore = ({ childId, points, onRedeem }: Props) => {
         </div>
       </CardHeader>
       <CardContent className="pt-8 space-y-4">
-        {REWARDS.map(reward => {
+        {loading ? (
+          <div className="flex justify-center p-8">
+            <Loader2 className="w-8 h-8 text-accent animate-spin" />
+          </div>
+        ) : rewards.map(reward => {
           const canAfford = points >= reward.cost;
           return (
             <div 

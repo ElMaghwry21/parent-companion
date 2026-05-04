@@ -8,7 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import AddTaskForm from '@/components/parent/AddTaskForm';
 import TaskReview from '@/components/parent/TaskReview';
 import ThemeToggle from '@/components/ThemeToggle';
-import { getTasks, getSubmissions, deleteTask, getChildPoints, getLinkedChildren, linkChild, addBehaviorPoints, TaskRow, SubmissionRow } from '@/lib/store';
+import NotificationsMenu from '@/components/shared/NotificationsMenu';
+import RewardsManager from '@/components/parent/RewardsManager';
+import { getTasks, getSubmissions, deleteTask, getChildPoints, getLinkedChildren, linkChild, addBehaviorPoints, addNotification, TaskRow, SubmissionRow } from '@/lib/store';
 import { getLevelInfo } from '@/lib/levels';
 import { toast } from 'sonner';
 import BackgroundLayout from '@/components/layout/BackgroundLayout';
@@ -53,30 +55,6 @@ const ParentDashboard = () => {
     if (user) refresh(); 
   }, [user, refresh]);
 
-  const handleAddTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTaskTitle || !newTaskPoints || !user) return;
-    
-    try {
-      await addTask({
-        title: newTaskTitle,
-        points: parseInt(newTaskPoints),
-        type: newTaskType,
-        created_by: user.id,
-        requires_proof: requiresProof,
-        is_routine: isRoutine,
-        total_hours: newTaskType === 'time-based' ? 1 : null
-      });
-      setNewTaskTitle('');
-      setNewTaskPoints('');
-      setIsRoutine(false);
-      refresh();
-      toast.success("Mission deployed to the squad! 🚀");
-    } catch (err) {
-      toast.error("Deployment failed");
-    }
-  };
-
   const handleLinkChild = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !childEmail) return;
@@ -97,6 +75,13 @@ const ParentDashboard = () => {
     if (!user) return;
     try {
       await addBehaviorPoints(childId, user.id, pts, reason);
+      
+      await addNotification(
+        childId,
+        'Special Bonus! ⭐',
+        `You just earned ${pts} XP for: ${reason}. Keep it up!`
+      );
+      
       toast.success(`Awarded ${pts} XP for ${reason}!`);
       refresh();
     } catch (err: any) {
@@ -133,6 +118,7 @@ const ParentDashboard = () => {
           </div>
           
           <div className="flex items-center gap-3">
+            {user && <NotificationsMenu userId={user.id} />}
             <ThemeToggle />
             <div className="h-8 w-[1px] bg-white/10 mx-1" />
             <Button 
@@ -206,15 +192,9 @@ const ParentDashboard = () => {
                          <Badge 
                            key={child.id} 
                            variant="secondary" 
-                           onClick={() => {
-                             if (localStorage.getItem('pc-guest-user')) {
-                               localStorage.setItem('pc-guest-user', JSON.stringify(child));
-                               window.location.reload();
-                             }
-                           }}
-                           className="bg-white/5 border-white/10 py-1.5 px-3 rounded-lg text-[10px] font-black uppercase italic cursor-pointer hover:bg-primary/20 transition-all"
+                           className="bg-white/5 border-white/10 py-1.5 px-3 rounded-lg text-[10px] font-black uppercase italic"
                          >
-                           {child.name} (View)
+                           {child.name}
                          </Badge>
                        ))}
                     </div>
@@ -254,9 +234,10 @@ const ParentDashboard = () => {
 
               {/* Main Tabs Content */}
               <Tabs defaultValue="tasks" className="w-full">
-                <TabsList className="w-full max-w-sm h-14 p-1.5 glass-premium rounded-2xl border border-white/10 shadow-xl mb-8">
+                <TabsList className="w-full h-14 p-1.5 glass-premium rounded-2xl border border-white/10 shadow-xl mb-8 flex">
                   <TabsTrigger value="tasks" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary/20 data-[state=active]:text-primary">Missions</TabsTrigger>
                   <TabsTrigger value="review" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-accent/20 data-[state=active]:text-accent">Review</TabsTrigger>
+                  <TabsTrigger value="rewards" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-secondary/20 data-[state=active]:text-secondary">Store & Rewards</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="tasks" className="mt-0">
@@ -284,6 +265,10 @@ const ParentDashboard = () => {
 
                 <TabsContent value="review" className="mt-0">
                    <TaskReview submissions={submissions} onUpdate={refresh} />
+                </TabsContent>
+
+                <TabsContent value="rewards" className="mt-0">
+                   {user && <RewardsManager parentId={user.id} />}
                 </TabsContent>
               </Tabs>
            </div>

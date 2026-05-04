@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TaskRow, SubmissionRow, addSubmission, uploadProofImage } from '@/lib/store';
+import { TaskRow, SubmissionRow, addSubmission, uploadProofImage, addNotification } from '@/lib/store';
 import { toast } from 'sonner';
 import { CheckCircle2, Clock, Camera, Send, AlertCircle, Sparkles, Image as ImageIcon } from 'lucide-react';
 
@@ -70,6 +70,14 @@ const TaskList = ({ tasks, submissions, childId, onSubmit }: Props) => {
         earned_points: earned,
         proof_image_url: proofUrl,
       });
+
+      if (task.created_by) {
+        await addNotification(
+          task.created_by,
+          'Mission Awaiting Review ⏱️',
+          `A child submitted proof for "${task.title}". Review it to award XP!`
+        );
+      }
 
       setProofFiles(prev => { const n = { ...prev }; delete n[task.id]; return n; });
       setProofPreviews(prev => { const n = { ...prev }; delete n[task.id]; return n; });

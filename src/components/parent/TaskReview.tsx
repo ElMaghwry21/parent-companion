@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { SubmissionRow, TaskRow, updateSubmissionStatus, getTasks } from '@/lib/store';
+import { SubmissionRow, TaskRow, updateSubmissionStatus, getTasks, addNotification } from '@/lib/store';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { CheckCircle2, XCircle, Clock, History, Camera, Award } from 'lucide-react';
 
@@ -12,9 +13,14 @@ interface Props {
 }
 
 const TaskReview = ({ submissions, onUpdate }: Props) => {
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<TaskRow[]>([]);
 
-  useEffect(() => { getTasks().then(setTasks); }, [submissions]);
+  useEffect(() => { 
+    if (user) {
+      getTasks(user.id).then(setTasks);
+    }
+  }, [submissions, user]);
 
   const pending = submissions.filter(s => s.status === 'pending');
   const reviewed = submissions.filter(s => s.status !== 'pending');
@@ -23,7 +29,20 @@ const TaskReview = ({ submissions, onUpdate }: Props) => {
 
   const handleAction = async (id: string, status: 'approved' | 'rejected') => {
     try {
+      const sub = pending.find(s => s.id === id);
+      const task = sub ? getTask(sub.task_id) : null;
       await updateSubmissionStatus(id, status);
+      
+      if (sub && task) {
+        await addNotification(
+          sub.child_id, 
+          status === 'approved' ? 'Mission Approved! 🌟' : 'Mission Rejected ❌',
+          status === 'approved' 
+            ? `Epic! You earned ${sub.earned_points} XP for "${task.title}".` 
+            : `Your mission "${task.title}" needs more work.`
+        );
+      }
+      
       onUpdate();
       toast.success(status === 'approved' ? 'Task approved! Points awarded 🎉' : 'Task rejected');
     } catch (err: any) {

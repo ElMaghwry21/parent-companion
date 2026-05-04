@@ -45,11 +45,6 @@ const Login = () => {
         toast.error(error);
         setLoading(false);
         clearTimeout(loginTimeout);
-      } else {
-        // Check if we entered via Demo Mode
-        if (localStorage.getItem('pc-guest-user')) {
-          toast.success('Entering Demo Mode (Offline)');
-        }
       }
       // If success, AuthContext listener will pick it up
       clearTimeout(loginTimeout);
@@ -130,42 +125,10 @@ const Login = () => {
                       {loading ? 'SYNCING...' : 'INITIATE LOGIN'}
                     </Button>
                     
-                    {/* Demo Mode Role Selector */}
-                    <div className="pt-4 grid grid-cols-2 gap-3 border-t border-white/5 mt-6">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setEmail('parent@demo.com');
-                          setPassword('123456');
-                          // Trigger login manually
-                          setTimeout(() => {
-                            const form = document.querySelector('form');
-                            form?.requestSubmit();
-                          }, 100);
-                        }}
-                        className="h-10 rounded-xl border-white/10 hover:bg-primary/20 text-[10px] font-black uppercase tracking-tighter"
-                      >
-                        Demo Parent
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setEmail('child@demo.com');
-                          setPassword('123456');
-                          // Trigger login manually
-                          setTimeout(() => {
-                            const form = document.querySelector('form');
-                            form?.requestSubmit();
-                          }, 100);
-                        }}
-                        className="h-10 rounded-xl border-white/10 hover:bg-secondary/20 text-[10px] font-black uppercase tracking-tighter"
-                      >
-                        Demo Child
-                      </Button>
+                    <div className="pt-4 border-t border-white/5 mt-6 text-center">
+                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                        Strict Authentication Protocol Active
+                      </p>
                     </div>
                   </form>
                 </TabsContent>
@@ -234,22 +197,6 @@ const Login = () => {
             </Tabs>
           </Card>
           
-          <div className="mt-8 text-center">
-            <button 
-              onClick={() => {
-                // Only clear auth and session, preserve local tasks/progress
-                Object.keys(localStorage).forEach(key => {
-                  if (key.includes('auth-token') || key === 'pc-guest-user') {
-                    localStorage.removeItem(key);
-                  }
-                });
-                window.location.reload();
-              }}
-              className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors py-2 px-4 rounded-lg border border-white/5 hover:border-primary/20 backdrop-blur-sm"
-            >
-              ⚠ Stuck? Click to Repair Session
-            </button>
-          </div>
         </ScrollReveal>
       </div>
     </BackgroundLayout>

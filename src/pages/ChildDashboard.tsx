@@ -9,6 +9,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { getTasks, getSubmissions, getChildPoints, getBehaviorLogs, TaskRow, SubmissionRow, BehaviorLogRow } from '@/lib/store';
 import { getLevelInfo } from '@/lib/levels';
 import BackgroundLayout from '@/components/layout/BackgroundLayout';
+import NotificationsMenu from '@/components/shared/NotificationsMenu';
 import { Trophy, Star, Store, ListChecks, LogOut, Shield, Target, Zap, ArrowUpCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -27,7 +28,7 @@ const ChildDashboard = () => {
     if (!childId) return;
     try {
       const [t, s, p, b] = await Promise.all([
-        getTasks(), 
+        getTasks(user?.parent_id || undefined), 
         getSubmissions(childId, 'child'), 
         getChildPoints(childId),
         getBehaviorLogs(childId, 'child')
@@ -39,7 +40,7 @@ const ChildDashboard = () => {
     } catch (err) {
       console.error("Child refresh failed:", err);
     }
-  }, [childId]);
+  }, [childId, user?.parent_id]);
 
   useEffect(() => { if (childId) refresh(); }, [childId, refresh]);
 
@@ -65,6 +66,7 @@ const ChildDashboard = () => {
                <Zap className="w-4 h-4 text-yellow-400 mr-2 animate-pulse" fill="currentColor" />
                <span className="font-black text-sm tracking-tighter">{points} XP</span>
             </div>
+            {user && <NotificationsMenu userId={user.id} />}
             <ThemeToggle />
             <Button 
               variant="ghost" 
