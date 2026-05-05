@@ -32,7 +32,7 @@ export default function VaultManager({ parentId }: Props) {
       const kids = await getLinkedChildren(parentId);
       setChildren(kids);
       if (kids.length > 0) {
-        setChildId(kids[0].id);
+        setChildId(kids[0].user_id);
         setTotal(kids[0].vault_total_balance || 1000);
         setThreshold(kids[0].vault_points_threshold || 500);
         setPayout(kids[0].vault_payout_amount || 100);
