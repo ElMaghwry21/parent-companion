@@ -1,0 +1,21 @@
+{
+  "name": "Parent Companion",
+  "short_name": "ParentCompanion",
+  "description": "The ultimate family adventure app for managing tasks and rewards.",
+  "start_url": "/parent-companion/",
+  "display": "standalone",
+  "background_color": "#030014",
+  "theme_color": "#9333ea",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
