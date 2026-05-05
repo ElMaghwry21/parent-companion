@@ -40,26 +40,37 @@ const ChildDashboard = () => {
 
   const refresh = useCallback(async () => {
     if (!childId) return;
+    console.log("ChildDashboard: Refreshing for childId:", childId);
     try {
-      // Always fetch latest profile to ensure we have the current parent_id (in case of new linking)
-      const { data: profile } = await supabase.from('profiles').select('parent_id').eq('user_id', childId).maybeSingle();
+      // 1. Fetch Profile
+      const { data: profile, error: profileError } = await supabase.from('profiles').select('parent_id').eq('user_id', childId).maybeSingle();
+      if (profileError) console.error("Error fetching child profile:", profileError);
+      
       const effectiveParentId = profile?.parent_id || user?.parent_id;
+      console.log("ChildDashboard: Effective parentId is:", effectiveParentId);
       setCurrentParentId(effectiveParentId);
 
-      const [t, s, p, b, v] = await Promise.all([
-        getTasks(effectiveParentId || undefined), 
-        getSubmissions(childId, 'child'), 
-        getChildPoints(childId),
-        getBehaviorLogs(childId, 'child'),
-        getVaultData(childId)
-      ]);
-      setTasks(t);
-      setSubmissions(s);
-      setPoints(p);
-      setBehaviorLogs(b);
-      setVaultData(v);
+      // 2. Fetch Tasks (Independent)
+      if (effectiveParentId) {
+        getTasks(effectiveParentId).then(setTasks).catch(err => console.error("Tasks fetch failed:", err));
+      }
+
+      // 3. Fetch Submissions
+      getSubmissions(childId, 'child').then(setSubmissions).catch(err => console.error("Submissions fetch failed:", err));
+
+      // 4. Fetch Points
+      getChildPoints(childId).then(setPoints).catch(err => console.error("Points fetch failed:", err));
+
+      // 5. Fetch Behavior Logs
+      getBehaviorLogs(childId, 'child').then(setBehaviorLogs).catch(err => console.error("Behavior logs fetch failed:", err));
+
+      // 6. Fetch Vault Data (This is likely failing if columns are missing)
+      getVaultData(childId).then(setVaultData).catch(err => {
+        console.warn("Vault data fetch failed (likely missing columns):", err);
+      });
+
     } catch (err) {
-      console.error("Child refresh failed:", err);
+      console.error("Critical Child refresh error:", err);
     }
   }, [childId, user?.parent_id]);
 
@@ -292,6 +303,12 @@ const ChildDashboard = () => {
               </Card>
             </ScrollReveal>
           </div>
+        </div>
+        {/* Debug Info (Temporary) */}
+        <div className="mt-20 p-4 border border-white/10 rounded-2xl bg-black/20 text-[10px] font-mono opacity-30">
+          <p>UID: {childId}</p>
+          <p>PID: {currentParentId || 'NONE'}</p>
+          <p>Tasks: {tasks.length}</p>
         </div>
       </main>
     </BackgroundLayout>

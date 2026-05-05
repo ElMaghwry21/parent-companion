@@ -146,6 +146,7 @@ export async function getLinkedChildren(parentId: string): Promise<LinkedChild[]
 
 // Tasks
 export async function getTasks(parentId?: string): Promise<TaskRow[]> {
+  console.log("getTasks called with parentId:", parentId);
   if (!parentId) {
     console.warn("getTasks called without parentId, returning empty array to prevent leaks");
     return [];
@@ -155,7 +156,12 @@ export async function getTasks(parentId?: string): Promise<TaskRow[]> {
     .select('*')
     .eq('created_by', parentId)
     .order('created_at', { ascending: false });
-  if (error) throw error;
+
+  if (error) {
+    console.error("Error fetching tasks:", error);
+    throw error;
+  }
+  console.log(`Fetched ${data?.length || 0} tasks for parent ${parentId}`);
   return (data as TaskRow[]) || [];
 }
 

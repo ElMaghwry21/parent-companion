@@ -32,29 +32,32 @@ const ParentDashboard = () => {
   const refresh = useCallback(async () => {
     if (!user) return;
     try {
-      const [t, s, kids, redems] = await Promise.all([
-        getTasks(user.id), 
-        getSubmissions(user.id, 'parent'),
-        getLinkedChildren(user.id),
-        getRedemptions(user.id)
-      ]);
-      setTasks(t);
-      setSubmissions(s);
-      setLinkedChildren(kids as AppUser[]);
-      setRedemptions(redems);
+      // 1. Tasks
+      getTasks(user.id).then(setTasks).catch(err => console.error("Tasks fetch failed:", err));
       
-      if (kids.length > 0) {
-        const pts = await getChildPoints(kids[0].id);
-        setChildPoints(pts);
-      } else if (s.length > 0) {
-        const pts = await getChildPoints(s[0].child_id);
-        setChildPoints(pts);
-      }
+      // 2. Submissions
+      getSubmissions(user.id, 'parent').then(s => {
+        setSubmissions(s);
+        if (s.length > 0 && linkedChildren.length === 0) {
+           getChildPoints(s[0].child_id).then(setChildPoints);
+        }
+      }).catch(err => console.error("Submissions fetch failed:", err));
+
+      // 3. Children
+      getLinkedChildren(user.id).then(kids => {
+        setLinkedChildren(kids as AppUser[]);
+        if (kids.length > 0) {
+          getChildPoints(kids[0].id).then(setChildPoints);
+        }
+      }).catch(err => console.error("Children fetch failed:", err));
+
+      // 4. Redemptions
+      getRedemptions(user.id).then(setRedemptions).catch(err => console.error("Redemptions fetch failed:", err));
+
     } catch (err) {
-      console.error("Refresh failed:", err);
-      toast.error("Failed to sync data");
+      console.error("Critical Parent refresh error:", err);
     }
-  }, [user]);
+  }, [user, linkedChildren.length]);
 
   useEffect(() => { 
     if (user) {
