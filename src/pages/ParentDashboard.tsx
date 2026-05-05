@@ -10,11 +10,12 @@ import TaskReview from '@/components/parent/TaskReview';
 import ThemeToggle from '@/components/ThemeToggle';
 import NotificationsMenu from '@/components/shared/NotificationsMenu';
 import RewardsManager from '@/components/parent/RewardsManager';
-import { getTasks, getSubmissions, deleteTask, getChildPoints, getLinkedChildren, linkChild, addBehaviorPoints, addNotification, TaskRow, SubmissionRow } from '@/lib/store';
+import VaultManager from '@/components/parent/VaultManager';
+import { getTasks, getSubmissions, deleteTask, getChildPoints, getLinkedChildren, linkChild, addBehaviorPoints, addNotification, getRedemptions, TaskRow, SubmissionRow, RedemptionRow } from '@/lib/store';
 import { getLevelInfo } from '@/lib/levels';
 import { toast } from 'sonner';
 import BackgroundLayout from '@/components/layout/BackgroundLayout';
-import { LogOut, ClipboardList, Trash2, PlusCircle, LayoutDashboard, Activity, Settings } from 'lucide-react';
+import { LogOut, ClipboardList, Trash2, PlusCircle, LayoutDashboard, Activity, Settings, ShoppingBag, Landmark } from 'lucide-react';
 import ScrollReveal from '@/components/animation/ScrollReveal';
 
 const ParentDashboard = () => {
@@ -23,20 +24,23 @@ const ParentDashboard = () => {
   const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
   const [childPoints, setChildPoints] = useState(0);
   const [linkedChildren, setLinkedChildren] = useState<AppUser[]>([]);
+  const [redemptions, setRedemptions] = useState<RedemptionRow[]>([]);
   const [childEmail, setChildEmail] = useState('');
   const [linking, setLinking] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!user) return;
     try {
-      const [t, s, kids] = await Promise.all([
+      const [t, s, kids, redems] = await Promise.all([
         getTasks(user.id), 
         getSubmissions(user.id, 'parent'),
-        getLinkedChildren(user.id)
+        getLinkedChildren(user.id),
+        getRedemptions(user.id)
       ]);
       setTasks(t);
       setSubmissions(s);
-      setLinkedChildren(kids as any);
+      setLinkedChildren(kids as AppUser[]);
+      setRedemptions(redems);
       
       if (kids.length > 0) {
         const pts = await getChildPoints(kids[0].id);
@@ -64,8 +68,9 @@ const ParentDashboard = () => {
       toast.success(`Successfully linked with ${name}!`);
       setChildEmail('');
       refresh();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to link child");
+    } catch (err) {
+      const error = err as Error;
+      toast.error(error.message || "Failed to link child");
     } finally {
       setLinking(false);
     }
@@ -84,12 +89,14 @@ const ParentDashboard = () => {
       
       toast.success(`Awarded ${pts} XP for ${reason}!`);
       refresh();
-    } catch (err: any) {
-      toast.error(err.message || "Limit exceeded or failed to award");
+    } catch (err) {
+      const error = err as Error;
+      toast.error(error.message || "Limit exceeded or failed to award");
     }
   };
 
   const pendingCount = submissions.filter(s => s.status === 'pending').length;
+  const pendingRedemptionsCount = redemptions.filter(r => r.status === 'pending').length;
   const { current } = getLevelInfo(childPoints);
 
   const handleDelete = async (id: string) => {
@@ -97,8 +104,9 @@ const ParentDashboard = () => {
       await deleteTask(id);
       await refresh();
       toast.success('Task deleted');
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete task");
+    } catch (err) {
+      const error = err as Error;
+      toast.error(error.message || "Failed to delete task");
     }
   };
 
@@ -161,8 +169,15 @@ const ParentDashboard = () => {
                   <div className="glass-premium p-6 rounded-[2rem] flex flex-col items-center justify-center gap-2 hover-glow group transition-all relative">
                     <ClipboardList className="text-accent w-8 h-8 mb-1" />
                     <p className="text-3xl font-black text-glow">{pendingCount}</p>
-                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Awaiting Intel</p>
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Pending Missions</p>
                     {pendingCount > 0 && <span className="absolute top-4 right-4 h-3 w-3 rounded-full bg-accent animate-ping" />}
+                  </div>
+
+                  <div className="glass-premium p-6 rounded-[2rem] flex flex-col items-center justify-center gap-2 hover-glow group transition-all relative">
+                    <ShoppingBag className="text-secondary w-8 h-8 mb-1" />
+                    <p className="text-3xl font-black text-glow">{pendingRedemptionsCount}</p>
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">New Orders</p>
+                    {pendingRedemptionsCount > 0 && <span className="absolute top-4 right-4 h-3 w-3 rounded-full bg-secondary animate-bounce" />}
                   </div>
                 </div>
               </ScrollReveal>
@@ -236,8 +251,15 @@ const ParentDashboard = () => {
               <Tabs defaultValue="tasks" className="w-full">
                 <TabsList className="w-full h-14 p-1.5 glass-premium rounded-2xl border border-white/10 shadow-xl mb-8 flex">
                   <TabsTrigger value="tasks" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary/20 data-[state=active]:text-primary">Missions</TabsTrigger>
-                  <TabsTrigger value="review" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-accent/20 data-[state=active]:text-accent">Review</TabsTrigger>
-                  <TabsTrigger value="rewards" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-secondary/20 data-[state=active]:text-secondary">Store & Rewards</TabsTrigger>
+                  <TabsTrigger value="review" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-accent/20 data-[state=active]:text-accent relative">
+                    Review
+                    {pendingCount > 0 && <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-accent text-[8px]">{pendingCount}</Badge>}
+                  </TabsTrigger>
+                  <TabsTrigger value="rewards" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-secondary/20 data-[state=active]:text-secondary relative">
+                    Store & Rewards
+                    {pendingRedemptionsCount > 0 && <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-secondary text-[8px]">{pendingRedemptionsCount}</Badge>}
+                  </TabsTrigger>
+                  <TabsTrigger value="bank" className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-primary/20 data-[state=active]:text-primary">Family Bank</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="tasks" className="mt-0">
@@ -269,6 +291,10 @@ const ParentDashboard = () => {
 
                 <TabsContent value="rewards" className="mt-0">
                    {user && <RewardsManager parentId={user.id} />}
+                </TabsContent>
+
+                <TabsContent value="bank" className="mt-0">
+                   {user && <VaultManager parentId={user.id} />}
                 </TabsContent>
               </Tabs>
            </div>

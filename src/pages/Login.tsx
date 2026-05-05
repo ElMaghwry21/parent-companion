@@ -48,8 +48,8 @@ const Login = () => {
       }
       // If success, AuthContext listener will pick it up
       clearTimeout(loginTimeout);
-    } catch (err: any) {
-      toast.error('An unexpected error occurred. Try hitting Repair.');
+    } catch (err) {
+      toast.error('An unexpected error occurred. Try refreshing the page.');
       setLoading(false);
       clearTimeout(loginTimeout);
     }

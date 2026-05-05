@@ -6,8 +6,9 @@ import { Progress } from '@/components/ui/progress';
 import TaskList from '@/components/child/TaskList';
 import RewardsStore from '@/components/child/RewardsStore';
 import ThemeToggle from '@/components/ThemeToggle';
-import { getTasks, getSubmissions, getChildPoints, getBehaviorLogs, TaskRow, SubmissionRow, BehaviorLogRow } from '@/lib/store';
+import { getTasks, getSubmissions, getChildPoints, getBehaviorLogs, getVaultData, TaskRow, SubmissionRow, BehaviorLogRow } from '@/lib/store';
 import { getLevelInfo } from '@/lib/levels';
+import VaultStatus from '@/components/child/VaultStatus';
 import BackgroundLayout from '@/components/layout/BackgroundLayout';
 import NotificationsMenu from '@/components/shared/NotificationsMenu';
 import { Trophy, Star, Store, ListChecks, LogOut, Shield, Target, Zap, ArrowUpCircle } from 'lucide-react';
@@ -21,22 +22,25 @@ const ChildDashboard = () => {
   const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
   const [points, setPoints] = useState(0);
   const [behaviorLogs, setBehaviorLogs] = useState<BehaviorLogRow[]>([]);
+  const [vaultData, setVaultData] = useState<any>(null);
 
   const childId = user?.id || '';
 
   const refresh = useCallback(async () => {
     if (!childId) return;
     try {
-      const [t, s, p, b] = await Promise.all([
+      const [t, s, p, b, v] = await Promise.all([
         getTasks(user?.parent_id || undefined), 
         getSubmissions(childId, 'child'), 
         getChildPoints(childId),
-        getBehaviorLogs(childId, 'child')
+        getBehaviorLogs(childId, 'child'),
+        getVaultData(childId)
       ]);
       setTasks(t);
       setSubmissions(s);
       setPoints(p);
       setBehaviorLogs(b);
+      setVaultData(v);
     } catch (err) {
       console.error("Child refresh failed:", err);
     }
@@ -172,8 +176,12 @@ const ChildDashboard = () => {
             </ScrollReveal>
           </div>
 
-          {/* Sidebar: Activity Logs */}
+          {/* Sidebar: Activity Logs & Vault */}
           <div className="lg:col-span-5 space-y-8">
+            <ScrollReveal>
+              <VaultStatus points={points} vaultData={vaultData} />
+            </ScrollReveal>
+
             <ScrollReveal>
               <Card className="glass-premium border-none rounded-[2.5rem] p-8 min-h-[400px]">
                 <div className="flex items-center gap-3 mb-8">
@@ -186,20 +194,24 @@ const ChildDashboard = () => {
                     ...behaviorLogs.map(b => ({ ...b, type: 'behavior' as const })),
                     ...submissions.filter(s => s.status === 'approved').map(s => ({ ...s, type: 'mission' as const }))
                   ]
-                  .sort((a, b) => new Date((b as any).created_at || (b as any).submitted_at).getTime() - new Date((a as any).created_at || (a as any).submitted_at).getTime())
+                  .sort((a, b) => {
+                    const dateA = new Date((a as { created_at?: string; submitted_at?: string }).created_at || (a as { created_at?: string; submitted_at?: string }).submitted_at || 0).getTime();
+                    const dateB = new Date((b as { created_at?: string; submitted_at?: string }).created_at || (b as { created_at?: string; submitted_at?: string }).submitted_at || 0).getTime();
+                    return dateB - dateA;
+                  })
                   .slice(0, 10)
-                  .map((log: any, idx) => (
+                  .map((log: any, idx: number) => (
                     <div key={idx} className="flex gap-4 items-start border-l-2 border-white/10 pl-4 py-2 relative group hover:border-primary/50 transition-colors">
                       <div className="absolute -left-[5px] top-4 w-2 h-2 rounded-full bg-white/20 group-hover:bg-primary" />
                       <div className="flex-1 text-left">
                         <p className="text-[9px] font-black text-muted-foreground uppercase opacity-50 mb-1">
-                          {new Date(log.created_at || log.submitted_at).toLocaleDateString()}
+                          {new Date((log as { created_at?: string; submitted_at?: string }).created_at || (log as { created_at?: string; submitted_at?: string }).submitted_at || 0).toLocaleDateString()}
                         </p>
                         <p className="text-xs font-black uppercase tracking-tight leading-none mb-1">
-                          {log.type === 'behavior' ? 'Life Mission: ' + log.reason : 'Mission Accomplished'}
+                          {log.type === 'behavior' ? 'Life Mission: ' + (log as BehaviorLogRow).reason : 'Mission Accomplished'}
                         </p>
                         <p className={`text-[10px] font-bold italic ${log.type === 'behavior' ? 'text-accent' : 'text-primary'}`}>
-                          +{log.points || log.earned_points} XP EARNED
+                          +{(log as BehaviorLogRow).points || (log as SubmissionRow).earned_points} XP EARNED
                         </p>
                       </div>
                     </div>

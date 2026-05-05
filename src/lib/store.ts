@@ -80,8 +80,8 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 // Linking
 export async function linkChild(childEmail: string, parentId: string) {
   // Search by email (assuming we'll add it) or exact name for now
-  const { data, error }: any = await supabase
-    .from('profiles' as any)
+  const { data, error } = await supabase
+    .from('profiles')
     .select('id, name')
     .eq('role', 'child')
     .or(`email.eq.${childEmail},name.eq.${childEmail}`)
@@ -91,8 +91,8 @@ export async function linkChild(childEmail: string, parentId: string) {
   if (!data) throw new Error("Child account not found. Make sure the email/name is correct.");
 
   const { error: updateError } = await supabase
-    .from('profiles' as any)
-    .update({ parent_id: parentId } as any)  
+    .from('profiles')
+    .update({ parent_id: parentId })  
     .eq('id', data.id);
 
   if (updateError) throw updateError;
@@ -100,10 +100,10 @@ export async function linkChild(childEmail: string, parentId: string) {
 }
 
 export async function getLinkedChildren(parentId: string) {
-  const { data, error }: any = await supabase
-    .from('profiles' as any)
+  const { data, error } = await supabase
+    .from('profiles')
     .select('*')
-    .eq('parent_id' as any, parentId)
+    .eq('parent_id', parentId)
     .eq('role', 'child');
   if (error) throw error;
   return data || [];
@@ -115,8 +115,8 @@ export async function getTasks(parentId?: string): Promise<TaskRow[]> {
     console.warn("getTasks called without parentId, returning empty array to prevent leaks");
     return [];
   }
-  const { data, error }: any = await supabase
-    .from('tasks' as any)
+  const { data, error } = await supabase
+    .from('tasks')
     .select('*')
     .eq('created_by', parentId)
     .order('created_at', { ascending: false });
@@ -125,12 +125,12 @@ export async function getTasks(parentId?: string): Promise<TaskRow[]> {
 }
 
 export async function addTask(task: Omit<TaskRow, 'id' | 'created_at'>) {
-  const { error } = await supabase.from('tasks' as any).insert(task as any);
+  const { error } = await supabase.from('tasks').insert(task);
   if (error) throw error;
 }
 
 export async function deleteTask(id: string) {
-  const { error } = await supabase.from('tasks' as any).delete().eq('id', id);
+  const { error } = await supabase.from('tasks').delete().eq('id', id);
   if (error) throw error;
 }
 
@@ -138,76 +138,76 @@ export async function deleteTask(id: string) {
 export async function getSubmissions(userId: string, role: 'parent' | 'child'): Promise<SubmissionRow[]> {
   let query;
   if (role === 'parent') {
-    query = supabase.from('task_submissions' as any)
+    query = supabase.from('task_submissions')
       .select('*, task:tasks!inner(*)')
       .eq('task.created_by', userId);
   } else {
-    query = supabase.from('task_submissions' as any)
+    query = supabase.from('task_submissions')
       .select('*, task:tasks(*)')
       .eq('child_id', userId);
   }
-  const { data, error }: any = await query.order('submitted_at', { ascending: false });
+  const { data, error } = await query.order('submitted_at', { ascending: false });
   if (error) throw error;
-  return (data as any[]) || [];
+  return (data as SubmissionRow[]) || [];
 }
 
 export async function addSubmission(sub: Omit<SubmissionRow, 'id' | 'submitted_at' | 'task'>) {
-  const { data: task, error: taskError }: any = await supabase.from('tasks' as any).select('*').eq('id', sub.task_id).single();
+  const { data: task, error: taskError } = await supabase.from('tasks').select('*').eq('id', sub.task_id).single();
   if (taskError) throw taskError;
 
   let earnedPoints = sub.earned_points;
   if (task && task.type === 'time-based' && task.total_hours && sub.hours_spent) {
     earnedPoints = Math.round(task.points * Math.min(sub.hours_spent / task.total_hours, 1));
   }
-  const { error } = await supabase.from('task_submissions' as any).insert({ ...sub, earned_points: earnedPoints } as any);
+  const { error } = await supabase.from('task_submissions').insert({ ...sub, earned_points: earnedPoints });
   if (error) throw error;
 }
 
 export async function updateSubmissionStatus(id: string, status: 'approved' | 'rejected') {
-  const { error } = await supabase.from('task_submissions' as any).update({ status } as any).eq('id', id);
+  const { error } = await supabase.from('task_submissions').update({ status }).eq('id', id);
   if (error) throw error;
 }
 
 // Behavior
 export async function addBehaviorPoints(childId: string, parentId: string, points: number, reason: string) {
-  const { error } = await supabase.from('behavior_logs' as any).insert({ child_id: childId, parent_id: parentId, points, reason } as any);
+  const { error } = await supabase.from('behavior_logs').insert({ child_id: childId, parent_id: parentId, points, reason });
   if (error) throw error;
 }
 
 export async function getBehaviorLogs(userId: string, role: 'parent' | 'child') {
-  let query = supabase.from('behavior_logs' as any).select('*');
+  let query = supabase.from('behavior_logs').select('*');
   if (role === 'parent') query = query.eq('parent_id', userId);
   else query = query.eq('child_id', userId);
-  const { data, error }: any = await query.order('created_at', { ascending: false });
+  const { data, error } = await query.order('created_at', { ascending: false });
   if (error) throw error;
   return (data as BehaviorLogRow[]) || [];
 }
 
 // Points
 export async function getChildPoints(childId: string): Promise<number> {
-  const [subsRes, redemRes, behaviorRes]: any = await Promise.all([
-    supabase.from('task_submissions' as any).select('earned_points').eq('child_id', childId).eq('status', 'approved'),
-    supabase.from('redemptions' as any).select('points_spent').eq('child_id', childId),
-    supabase.from('behavior_logs' as any).select('points').eq('child_id', childId),
+  const [subsRes, redemRes, behaviorRes] = await Promise.all([
+    supabase.from('task_submissions').select('earned_points').eq('child_id', childId).eq('status', 'approved'),
+    supabase.from('redemptions').select('points_spent').eq('child_id', childId),
+    supabase.from('behavior_logs').select('points').eq('child_id', childId),
   ]);
   if (subsRes.error) throw subsRes.error;
   if (redemRes.error) throw redemRes.error;
   if (behaviorRes.error) throw behaviorRes.error;
 
-  const earnedTasks = (subsRes.data || []).reduce((sum: number, s: any) => sum + s.earned_points, 0);
-  const earnedBehavior = (behaviorRes.data || []).reduce((sum: number, b: any) => sum + b.points, 0);
-  const spent = (redemRes.data || []).reduce((sum: number, r: any) => sum + r.points_spent, 0);
+  const earnedTasks = (subsRes.data || []).reduce((sum: number, s: { earned_points: number }) => sum + s.earned_points, 0);
+  const earnedBehavior = (behaviorRes.data || []).reduce((sum: number, b: { points: number }) => sum + b.points, 0);
+  const spent = (redemRes.data || []).reduce((sum: number, r: { points_spent: number }) => sum + r.points_spent, 0);
   return (earnedTasks + earnedBehavior) - spent;
 }
 
 // Redemptions
 export async function getRedemptions(parentId: string): Promise<RedemptionRow[]> {
   const children = await getLinkedChildren(parentId);
-  const childIds = children.map((c: any) => c.id);
+  const childIds = children.map((c: { id: string }) => c.id);
   if (childIds.length === 0) return [];
 
-  const { data, error }: any = await supabase
-    .from('redemptions' as any)
+  const { data, error } = await supabase
+    .from('redemptions')
     .select('*, reward:rewards(*)')
     .in('child_id', childIds)
     .order('redeemed_at', { ascending: false });
@@ -217,12 +217,12 @@ export async function getRedemptions(parentId: string): Promise<RedemptionRow[]>
 }
 
 export async function addRedemption(redemption: Omit<RedemptionRow, 'id' | 'redeemed_at' | 'status'>) {
-  const { error } = await supabase.from('redemptions' as any).insert({ ...redemption, status: 'pending' } as any);
+  const { error } = await supabase.from('redemptions').insert({ ...redemption, status: 'pending' });
   if (error) throw error;
 }
 
 export async function updateRedemptionStatus(id: string, status: 'pending' | 'fulfilled') {
-  const { error } = await supabase.from('redemptions' as any).update({ status } as any).eq('id', id);
+  const { error } = await supabase.from('redemptions').update({ status }).eq('id', id);
   if (error) throw error;
 }
 
@@ -235,8 +235,8 @@ export async function getRewards(userId: string, role: 'parent' | 'child' = 'par
     parentId = data?.parent_id || userId;
   }
 
-  const { data, error }: any = await supabase
-    .from('rewards' as any)
+  const { data, error } = await supabase
+    .from('rewards')
     .select('*')
     .or(`created_by.eq.system,created_by.eq.${parentId}`);
   
@@ -246,19 +246,19 @@ export async function getRewards(userId: string, role: 'parent' | 'child' = 'par
 }
 
 export async function addReward(reward: Omit<Reward, 'id'>) {
-  const { error } = await supabase.from('rewards' as any).insert(reward as any);
+  const { error } = await supabase.from('rewards').insert(reward);
   if (error) throw error;
 }
 
 export async function deleteReward(id: string) {
-  const { error } = await supabase.from('rewards' as any).delete().eq('id', id);
+  const { error } = await supabase.from('rewards').delete().eq('id', id);
   if (error) throw error;
 }
 
 // Notifications
 export async function getNotifications(userId: string): Promise<NotificationRow[]> {
-  const { data, error }: any = await supabase
-    .from('notifications' as any)
+  const { data, error } = await supabase
+    .from('notifications')
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
@@ -268,18 +268,42 @@ export async function getNotifications(userId: string): Promise<NotificationRow[
 }
 
 export async function addNotification(userId: string, title: string, message: string) {
-  const { error } = await supabase.from('notifications' as any).insert({
+  const { error } = await supabase.from('notifications').insert({
     user_id: userId,
     title,
     message,
     is_read: false
-  } as any);
+  });
   if (error) throw error;
 }
 
 export async function markNotificationRead(id: string) {
-  const { error } = await supabase.from('notifications' as any).update({ is_read: true } as any).eq('id', id);
+  const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
   if (error) throw error;
+}
+
+// Vault System
+export async function updateVaultSettings(childId: string, settings: { total: number, threshold: number, payout: number }) {
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      vault_total_balance: settings.total,
+      vault_points_threshold: settings.threshold,
+      vault_payout_amount: settings.payout
+    })
+    .eq('id', childId);
+  if (error) throw error;
+}
+
+export async function getVaultData(childId: string) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('vault_total_balance, vault_unlocked_balance, vault_points_threshold, vault_payout_amount, points:task_submissions(earned_points), behavior_points:behavior_logs(points)')
+    .eq('id', childId)
+    .single();
+  
+  if (error) throw error;
+  return data;
 }
 
 // Storage

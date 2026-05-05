@@ -14,30 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
-      profiles: {
+      behavior_logs: {
+        Row: {
+          child_id: string
+          created_at: string
+          id: string
+          parent_id: string
+          points: number
+          reason: string
+        }
+        Insert: {
+          child_id: string
+          created_at?: string
+          id?: string
+          parent_id: string
+          points: number
+          reason: string
+        }
+        Update: {
+          child_id?: string
+          created_at?: string
+          id?: string
+          parent_id?: string
+          points?: number
+          reason?: string
+        }
+        Relationships: []
+      }
+      notifications: {
         Row: {
           created_at: string
           id: string
-          name: string
-          role: string
-          updated_at: string
+          is_read: boolean
+          message: string
+          title: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          name: string
-          role: string
-          updated_at?: string
+          is_read?: boolean
+          message: string
+          title: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          parent_id: string | null
+          role: string
+          updated_at: string
+          user_id: string
+          vault_total_balance: number | null
+          vault_unlocked_balance: number | null
+          vault_points_threshold: number | null
+          vault_payout_amount: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          parent_id?: string | null
+          role: string
+          updated_at?: string
+          user_id: string
+          vault_total_balance?: number | null
+          vault_unlocked_balance?: number | null
+          vault_points_threshold?: number | null
+          vault_payout_amount?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
           name?: string
+          parent_id?: string | null
           role?: string
           updated_at?: string
           user_id?: string
+          vault_total_balance?: number | null
+          vault_unlocked_balance?: number | null
+          vault_points_threshold?: number | null
+          vault_payout_amount?: number | null
         }
         Relationships: []
       }
@@ -48,6 +117,7 @@ export type Database = {
           points_spent: number
           redeemed_at: string
           reward_id: string
+          status: string
         }
         Insert: {
           child_id: string
@@ -55,6 +125,7 @@ export type Database = {
           points_spent: number
           redeemed_at?: string
           reward_id: string
+          status?: string
         }
         Update: {
           child_id?: string
@@ -62,6 +133,34 @@ export type Database = {
           points_spent?: number
           redeemed_at?: string
           reward_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      rewards: {
+        Row: {
+          cost: number
+          created_at: string
+          created_by: string
+          icon: string
+          id: string
+          name: string
+        }
+        Insert: {
+          cost: number
+          created_at?: string
+          created_by: string
+          icon: string
+          id?: string
+          name: string
+        }
+        Update: {
+          cost?: number
+          created_at?: string
+          created_by?: string
+          icon?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }
@@ -111,6 +210,7 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          is_routine: boolean
           points: number
           requires_proof: boolean
           title: string
@@ -121,6 +221,7 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
+          is_routine?: boolean
           points: number
           requires_proof?: boolean
           title: string
@@ -131,6 +232,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
+          is_routine?: boolean
           points?: number
           requires_proof?: boolean
           title?: string
