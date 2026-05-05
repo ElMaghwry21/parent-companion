@@ -84,11 +84,11 @@ export async function linkChild(childEmail: string, parentId: string) {
     .from('profiles')
     .select('id, name')
     .eq('role', 'child')
-    .or(`email.eq.${childEmail},name.eq.${childEmail}`)
+    .eq('email', childEmail)
     .maybeSingle();
   
   if (error) throw error;
-  if (!data) throw new Error("Child account not found. Make sure the email/name is correct.");
+  if (!data) throw new Error("Child account not found. Make sure the email is correct.");
 
   const { error: updateError } = await supabase
     .from('profiles')

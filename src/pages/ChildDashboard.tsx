@@ -118,6 +118,14 @@ const ChildDashboard = () => {
                <Zap className="w-4 h-4 text-yellow-400 mr-2 animate-pulse" fill="currentColor" />
                <span className="font-black text-sm tracking-tighter">{points} XP</span>
             </div>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={refresh}
+              className="w-10 h-10 rounded-xl bg-white/5 border-white/10 hover:bg-primary/20 hover:text-primary transition-all"
+            >
+              <ArrowUpCircle className="w-5 h-5" />
+            </Button>
             {user && <NotificationsMenu userId={user.id} />}
             <ThemeToggle />
             <Button 
@@ -133,6 +141,17 @@ const ChildDashboard = () => {
       </header>
 
       <main className="max-w-4xl mx-auto pt-28 pb-20 px-6">
+        {(!user?.parent_id) && (
+          <div className="mb-10 p-6 glass-premium rounded-3xl border border-yellow-500/30 bg-yellow-500/5 animate-pulse">
+            <div className="flex items-center gap-4 text-yellow-500">
+              <Shield className="w-8 h-8" />
+              <div>
+                <h3 className="font-black uppercase tracking-tighter italic">Hero Not Linked!</h3>
+                <p className="text-[10px] font-bold opacity-80">Ask your parent to link your account using your name/email: <span className="text-white underline">{user?.name}</span></p>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* Main Content */}
           <div className="lg:col-span-7 space-y-10">
