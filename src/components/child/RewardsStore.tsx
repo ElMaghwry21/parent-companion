@@ -54,8 +54,9 @@ const RewardsStore = ({ childId, points, onRedeem }: Props) => {
 
       onRedeem();
       toast.success(`🎊 EPIC LOOT: You redeemed "${name}"! Check your inventory. 🥳`);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to redeem loot');
+    } catch (err) {
+      const error = err as Error;
+      toast.error(error.message || 'Failed to redeem loot');
     }
   };
 

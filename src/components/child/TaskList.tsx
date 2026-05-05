@@ -83,8 +83,9 @@ const TaskList = ({ tasks, submissions, childId, onSubmit }: Props) => {
       setProofPreviews(prev => { const n = { ...prev }; delete n[task.id]; return n; });
       onSubmit();
       toast.success('Mission report deployed! Waiting for approval. 🚀');
-    } catch (err: any) {
-      toast.error(err.message || 'Mission failed to deploy');
+    } catch (err) {
+      const error = err as Error;
+      toast.error(error.message || 'Mission failed to deploy');
     } finally {
       setSubmitting(null);
     }

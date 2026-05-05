@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth, AppUser } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -56,7 +57,33 @@ const ParentDashboard = () => {
   }, [user]);
 
   useEffect(() => { 
-    if (user) refresh(); 
+    if (user) {
+      refresh(); 
+
+      // Realtime subscription for live updates
+      const channel = supabase
+        .channel('parent-dashboard-realtime')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'task_submissions' },
+          () => refresh()
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'redemptions' },
+          () => refresh()
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `parent_id=eq.${user.id}` },
+          () => refresh()
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } 
   }, [user, refresh]);
 
   const handleLinkChild = async (e: React.FormEvent) => {

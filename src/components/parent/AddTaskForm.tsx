@@ -45,8 +45,9 @@ const AddTaskForm = ({ onTaskAdded }: Props) => {
       setRequiresProof(false);
       onTaskAdded();
       toast.success('Task added successfully!');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to add task');
+    } catch (err) {
+      const error = err as Error;
+      toast.error(error.message || 'Failed to add task');
     } finally {
       setLoading(false);
     }

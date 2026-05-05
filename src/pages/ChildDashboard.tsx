@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,13 +17,24 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import ScrollReveal from '@/components/animation/ScrollReveal';
 
+interface VaultData {
+  vault_total_balance: number | null;
+  vault_unlocked_balance: number | null;
+  vault_points_threshold: number | null;
+  vault_payout_amount: number | null;
+  points: { earned_points: number }[];
+  behavior_points: { points: number }[];
+}
+
+type ActivityLog = (BehaviorLogRow & { type: 'behavior' }) | (SubmissionRow & { type: 'mission' });
+
 const ChildDashboard = () => {
   const { user, logout } = useAuth();
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
   const [points, setPoints] = useState(0);
   const [behaviorLogs, setBehaviorLogs] = useState<BehaviorLogRow[]>([]);
-  const [vaultData, setVaultData] = useState<any>(null);
+  const [vaultData, setVaultData] = useState<VaultData | null>(null);
 
   const childId = user?.id || '';
 
@@ -46,7 +58,39 @@ const ChildDashboard = () => {
     }
   }, [childId, user?.parent_id]);
 
-  useEffect(() => { if (childId) refresh(); }, [childId, refresh]);
+  useEffect(() => { 
+    if (childId) {
+      refresh(); 
+
+      const channel = supabase
+        .channel('child-dashboard-realtime')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'tasks' },
+          () => refresh()
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'task_submissions', filter: `child_id=eq.${childId}` },
+          () => refresh()
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'behavior_logs', filter: `child_id=eq.${childId}` },
+          () => refresh()
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${childId}` },
+          () => refresh()
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } 
+  }, [childId, refresh]);
 
   const { current, next, progress } = getLevelInfo(points);
 
@@ -200,7 +244,7 @@ const ChildDashboard = () => {
                     return dateB - dateA;
                   })
                   .slice(0, 10)
-                  .map((log: any, idx: number) => (
+                  .map((log: ActivityLog, idx: number) => (
                     <div key={idx} className="flex gap-4 items-start border-l-2 border-white/10 pl-4 py-2 relative group hover:border-primary/50 transition-colors">
                       <div className="absolute -left-[5px] top-4 w-2 h-2 rounded-full bg-white/20 group-hover:bg-primary" />
                       <div className="flex-1 text-left">

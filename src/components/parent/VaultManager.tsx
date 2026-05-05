@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { AppUser } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,13 +13,19 @@ interface Props {
   parentId: string;
 }
 
+interface ChildProfile extends AppUser {
+  vault_total_balance: number | null;
+  vault_points_threshold: number | null;
+  vault_payout_amount: number | null;
+}
+
 export default function VaultManager({ parentId }: Props) {
   const [childId, setChildId] = useState('');
   const [total, setTotal] = useState(1000);
   const [threshold, setThreshold] = useState(500);
   const [payout, setPayout] = useState(100);
   const [loading, setLoading] = useState(false);
-  const [children, setChildren] = useState<any[]>([]);
+  const [children, setChildren] = useState<ChildProfile[]>([]);
 
   useEffect(() => {
     const fetchChildren = async () => {

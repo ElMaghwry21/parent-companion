@@ -128,8 +128,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (error) return error.message;
       return null;
-    } catch (err: any) {
-      return err.message || "Sign up failed.";
+    } catch (err) {
+      const error = err as Error;
+      return error.message || "Sign up failed.";
     }
   };
 
@@ -138,8 +139,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return error.message;
       return null;
-    } catch (err: any) {
-      return err.message || "Connection failed. Please try again.";
+    } catch (err) {
+      const error = err as Error;
+      return error.message || "Connection failed. Please try again.";
     }
   };
 

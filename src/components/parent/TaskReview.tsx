@@ -45,8 +45,9 @@ const TaskReview = ({ submissions, onUpdate }: Props) => {
       
       onUpdate();
       toast.success(status === 'approved' ? 'Task approved! Points awarded 🎉' : 'Task rejected');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update');
+    } catch (err) {
+      const error = err as Error;
+      toast.error(error.message || 'Failed to update');
     }
   };
 

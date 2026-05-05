@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,7 @@ export default function RewardsManager({ parentId }: Props) {
   const [cost, setCost] = useState('');
   const [icon, setIcon] = useState('🎁');
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!parentId) return;
     try {
       const [r, redems] = await Promise.all([
@@ -32,11 +32,11 @@ export default function RewardsManager({ parentId }: Props) {
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [parentId]);
 
   useEffect(() => {
     fetchData();
-  }, [parentId]);
+  }, [fetchData]);
 
   const handleAddReward = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +53,8 @@ export default function RewardsManager({ parentId }: Props) {
       toast.success("New reward added to the store!");
       fetchData();
     } catch (err) {
-      toast.error("Failed to add reward");
+      const error = err as Error;
+      toast.error(error.message || "Failed to add reward");
     }
   };
 
@@ -63,7 +64,8 @@ export default function RewardsManager({ parentId }: Props) {
       toast.success("Reward deleted");
       fetchData();
     } catch (err) {
-      toast.error("Failed to delete reward");
+      const error = err as Error;
+      toast.error(error.message || "Failed to delete reward");
     }
   };
 
@@ -83,7 +85,8 @@ export default function RewardsManager({ parentId }: Props) {
       toast.success("Reward marked as fulfilled!");
       fetchData();
     } catch (err) {
-      toast.error("Failed to fulfill reward");
+      const error = err as Error;
+      toast.error(error.message || "Failed to fulfill reward");
     }
   };
 
