@@ -42,7 +42,7 @@ const ChildDashboard = () => {
     if (!childId) return;
     try {
       // Always fetch latest profile to ensure we have the current parent_id (in case of new linking)
-      const { data: profile } = await supabase.from('profiles').select('parent_id').eq('id', childId).maybeSingle();
+      const { data: profile } = await supabase.from('profiles').select('parent_id').eq('user_id', childId).maybeSingle();
       const effectiveParentId = profile?.parent_id || user?.parent_id;
 
       const [t, s, p, b, v] = await Promise.all([
@@ -85,7 +85,7 @@ const ChildDashboard = () => {
         )
         .on(
           'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${childId}` },
+          { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `user_id=eq.${childId}` },
           () => refresh()
         )
         .subscribe();

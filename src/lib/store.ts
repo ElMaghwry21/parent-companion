@@ -291,7 +291,7 @@ export async function updateVaultSettings(childId: string, settings: { total: nu
       vault_points_threshold: settings.threshold,
       vault_payout_amount: settings.payout
     })
-    .eq('id', childId);
+    .eq('user_id', childId);
   if (error) throw error;
 }
 
@@ -299,7 +299,7 @@ export async function getVaultData(childId: string) {
   const { data, error } = await supabase
     .from('profiles')
     .select('vault_total_balance, vault_unlocked_balance, vault_points_threshold, vault_payout_amount, points:task_submissions(earned_points), behavior_points:behavior_logs(points)')
-    .eq('id', childId)
+    .eq('user_id', childId)
     .single();
   
   if (error) throw error;

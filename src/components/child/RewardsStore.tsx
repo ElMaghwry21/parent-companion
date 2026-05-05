@@ -41,7 +41,7 @@ const RewardsStore = ({ childId, points, onRedeem }: Props) => {
     try {
       await addRedemption({ child_id: childId, reward_id: rewardId, points_spent: cost });
       
-      const { data } = await supabase.from('profiles').select('parent_id').eq('id', childId).maybeSingle();
+      const { data } = await supabase.from('profiles').select('parent_id').eq('user_id', childId).maybeSingle();
       const parentId = data?.parent_id;
 
       if (parentId) {
