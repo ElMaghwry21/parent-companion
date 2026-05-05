@@ -7,6 +7,7 @@ export type UserRole = 'parent' | 'child';
 export interface AppUser {
   id: string;
   name: string;
+  email?: string | null;
   role: UserRole;
   parent_id: string | null;
 }
@@ -33,7 +34,7 @@ async function fetchProfile(userId: string): Promise<AppUser | null> {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('name, role, parent_id')
+      .select('name, role, parent_id, email')
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -47,6 +48,7 @@ async function fetchProfile(userId: string): Promise<AppUser | null> {
     return { 
       id: userId, 
       name: data.name, 
+      email: data.email,
       role: data.role as UserRole,
       parent_id: data.parent_id
     };
@@ -120,13 +122,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string, name: string, role: UserRole): Promise<string | null> => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email,
         password,
         options: { data: { name, role } },
       });
       
       if (error) return error.message;
+
+      // Ensure profile has email for linking (if the column exists)
+      if (signUpData.user) {
+        try {
+          await supabase
+            .from('profiles')
+            .update({ email })
+            .eq('user_id', signUpData.user.id);
+        } catch (e) {
+          console.warn("Could not save email to profile - column might be missing");
+        }
+      }
       return null;
     } catch (err) {
       const error = err as Error;

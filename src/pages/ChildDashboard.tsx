@@ -35,7 +35,7 @@ const ChildDashboard = () => {
   const [points, setPoints] = useState(0);
   const [behaviorLogs, setBehaviorLogs] = useState<BehaviorLogRow[]>([]);
   const [vaultData, setVaultData] = useState<VaultData | null>(null);
-
+  const [currentParentId, setCurrentParentId] = useState<string | null>(user?.parent_id || null);
   const childId = user?.id || '';
 
   const refresh = useCallback(async () => {
@@ -44,6 +44,7 @@ const ChildDashboard = () => {
       // Always fetch latest profile to ensure we have the current parent_id (in case of new linking)
       const { data: profile } = await supabase.from('profiles').select('parent_id').eq('user_id', childId).maybeSingle();
       const effectiveParentId = profile?.parent_id || user?.parent_id;
+      setCurrentParentId(effectiveParentId);
 
       const [t, s, p, b, v] = await Promise.all([
         getTasks(effectiveParentId || undefined), 
@@ -141,7 +142,7 @@ const ChildDashboard = () => {
       </header>
 
       <main className="max-w-4xl mx-auto pt-28 pb-20 px-6">
-        {(!user?.parent_id) && (
+        {(!currentParentId) && (
           <div className="mb-10 p-6 glass-premium rounded-3xl border border-yellow-500/30 bg-yellow-500/5 animate-pulse">
             <div className="flex items-center gap-4 text-yellow-500">
               <Shield className="w-8 h-8" />

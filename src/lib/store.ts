@@ -5,7 +5,7 @@ export type TaskRow = {
   created_by: string;
   title: string;
   points: number;
-  type: string;
+  type: 'simple' | 'time-based';
   total_hours: number | null;
   requires_proof: boolean;
   is_routine: boolean;
@@ -60,6 +60,17 @@ export interface Reward {
   created_by: string;
 }
 
+export interface LinkedChild {
+  id: string;
+  user_id: string;
+  name: string;
+  role: string;
+  parent_id: string | null;
+  vault_total_balance?: number | null;
+  vault_points_threshold?: number | null;
+  vault_payout_amount?: number | null;
+}
+
 export const DEFAULT_REWARDS: Reward[] = [
   { id: 'r1', name: 'Extra PlayStation Hour', cost: 100, icon: '🎮', created_by: 'system' },
   { id: 'r2', name: 'Family Outing', cost: 500, icon: '🏖️', created_by: 'system' },
@@ -78,17 +89,37 @@ export const DEFAULT_REWARDS: Reward[] = [
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 // Linking
-export async function linkChild(childEmail: string, parentId: string) {
-  // Search by email (assuming we'll add it) or exact name for now
+export async function linkChild(identifier: string, parentId: string) {
+  // Search by email OR exact name (case-insensitive)
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, name')
+    .select('id, name, user_id')
     .eq('role', 'child')
-    .eq('email', childEmail)
+    .or(`email.eq."${identifier.toLowerCase()}",name.ilike."${identifier}"`)
     .maybeSingle();
   
-  if (error) throw error;
-  if (!data) throw new Error("Child account not found. Make sure the email is correct.");
+  if (error) {
+    // If 'email' column doesn't exist, fallback to name search only
+    const { data: nameData, error: nameError } = await supabase
+      .from('profiles')
+      .select('id, name, user_id')
+      .eq('role', 'child')
+      .ilike('name', identifier)
+      .maybeSingle();
+    
+    if (nameError) throw nameError;
+    if (!nameData) throw new Error("Child account not found. Try searching by their exact name.");
+    
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ parent_id: parentId })  
+      .eq('id', nameData.id);
+
+    if (updateError) throw updateError;
+    return nameData.name;
+  }
+
+  if (!data) throw new Error("Child account not found. Make sure the email or name is correct.");
 
   const { error: updateError } = await supabase
     .from('profiles')
@@ -99,14 +130,18 @@ export async function linkChild(childEmail: string, parentId: string) {
   return data.name;
 }
 
-export async function getLinkedChildren(parentId: string) {
+export async function getLinkedChildren(parentId: string): Promise<LinkedChild[]> {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('parent_id', parentId)
     .eq('role', 'child');
   if (error) throw error;
-  return data || [];
+  
+  return (data || []).map(profile => ({
+    ...profile,
+    id: profile.user_id // Ensure ID is the auth ID to match AppUser interface
+  }));
 }
 
 // Tasks
@@ -295,12 +330,12 @@ export async function updateVaultSettings(childId: string, settings: { total: nu
   if (error) throw error;
 }
 
-export async function getVaultData(childId: string) {
+export async function getVaultData(childId: string): Promise<any> {
   const { data, error } = await supabase
     .from('profiles')
     .select('vault_total_balance, vault_unlocked_balance, vault_points_threshold, vault_payout_amount, points:task_submissions(earned_points), behavior_points:behavior_logs(points)')
     .eq('user_id', childId)
-    .single();
+    .maybeSingle();
   
   if (error) throw error;
   return data;
